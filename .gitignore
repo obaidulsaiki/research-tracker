@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+dist/
+build/
+out/
+
+# Environment variables
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.ntvs
+*.njsproj
+*.sln
+*.swp
+
+# Java / Maven (Backend)
+target/
+.mvn/
+*.class
+*.jar
+*.war
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

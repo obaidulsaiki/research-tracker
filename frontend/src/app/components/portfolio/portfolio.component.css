@@ -1,0 +1,59 @@
+:host {
+    --p-indigo: #4338ca;
+    --p-emerald: #10b981;
+    --p-slate: #1e293b;
+    --p-bg: #f8fafc;
+}
+
+.public-view {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--p-bg);
+    color: var(--p-slate);
+    font-family: 'Inter', sans-serif;
+    padding-bottom: 4rem;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* SECTIONS */
+.main-content {
+    margin-top: -6rem;
+    position: relative;
+    z-index: 10;
+}
+
+.public-footer {
+    text-align: center;
+    margin-top: 6rem;
+    padding-top: 3rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.public-footer p {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

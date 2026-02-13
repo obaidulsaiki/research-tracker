@@ -1,0 +1,68 @@
+<div class="app-shell animate-fade-in">
+    <app-dashboard-sidebar [activeTab]="activeTab()" (tabChange)="activeTab.set($event)"
+        (onViewPortfolio)="viewPortfolio()">
+    </app-dashboard-sidebar>
+
+    <main class="app-main">
+        <app-dashboard-header [activeTab]="activeTab()" (search)="searchText.set($event); currentPage.set(1)"
+            (onExport)="exportData()" (onAddResearch)="openAddModal()" (excelSelected)="onExcelSelected($event)"
+            (fileSelected)="onFileSelected($event)">
+        </app-dashboard-header>
+
+        <div class="app-content">
+            @if (activeTab() === 'overview') {
+            <app-overview-tab [stats]="mainStats()" [history]="recentHistory()"
+                (viewAllHistory)="activeTab.set('history')">
+            </app-overview-tab>
+            }
+
+            @if (activeTab() === 'archive') {
+            <app-archive-tab [papers]="paginatedPapers()" [totalPapersCount]="researchItems().length"
+                [totalFilteredCount]="filteredPapers().length" [currentPage]="currentPage()" [pageSize]="pageSize()"
+                [totalPages]="totalPages()" [pages]="pages()" [filterStatus]="filterStatus()"
+                [filterType]="filterType()" [filterYear]="filterYear()" [filterPublisher]="filterPublisher()"
+                [filterQuartile]="filterQuartile()" [availableTypes]="availableTypes()"
+                [availableYears]="availableYears()" [availablePublishers]="availablePublishers()"
+                (filterChange)="onTabFilterChange($event)" (onPageChange)="currentPage.set($event)"
+                (onEdit)="openEditModal($event)" (onDelete)="deleteItem($event)" (onSyncPublic)="syncPublicProfile()"
+                (onClearFilters)="clearFilters()" (onClearDatabase)="showBulkConfirm.set(true)">
+            </app-archive-tab>
+            }
+
+            @if (activeTab() === 'analytics') {
+            <app-analytics-tab [totalCount]="researchItems().length" [typeDist]="typeDistribution()"
+                [positionDist]="positionDistribution()" [statusDist]="statusDistribution()"
+                [quartileDist]="quartileDistribution()">
+            </app-analytics-tab>
+            }
+
+            @if (activeTab() === 'history') {
+            <app-history-tab [groupedHistory]="groupedHistory()" [totalEvents]="history().length">
+            </app-history-tab>
+            }
+
+            @if (activeTab() === 'authors') {
+            <app-authors-tab [coAuthors]="coAuthorStats()"></app-authors-tab>
+            }
+
+            @if (activeTab() === 'download') {
+            <app-download-tab [itemCount]="researchItems().length" (onExcel)="exportToExcel()" (onPdf)="exportToPdf()"
+                (onCsv)="exportData()">
+            </app-download-tab>
+            }
+        </div>
+    </main>
+
+    @if (showModal()) {
+    <app-add-paper-modal [editData]="itemToEdit()" (close)="closeModal()"></app-add-paper-modal>
+    }
+    @if (confirmDeleteId() !== null) {
+    <app-confirm-modal (cancel)="confirmDeleteId.set(null)" (confirm)="handleDelete()"></app-confirm-modal>
+    }
+    @if (showBulkConfirm()) {
+    <app-confirm-modal title="DANGER: Delete All Records?"
+        message="This will permanently wipe EVERYTHING from the database: all papers, all authors, and all history logs. This CANNOT be undone."
+        confirmText="Yes, WIPE EVERYTHING" (cancel)="showBulkConfirm.set(false)" (confirm)="handleBulkDelete()">
+    </app-confirm-modal>
+    }
+</div>

@@ -1,0 +1,14 @@
+<div class="public-view animate-fade-in">
+    <app-portfolio-hero [itemCount]="publicResearches().length" [q1Count]="q1Count()"
+        [publishedCount]="publishedCount()" (onBack)="goBack()">
+    </app-portfolio-hero>
+
+    <div class="container main-content">
+        <app-portfolio-showcase [items]="featured()"></app-portfolio-showcase>
+        <app-portfolio-timeline [items]="publicResearches()"></app-portfolio-timeline>
+    </div>
+
+    <footer class="public-footer">
+        <p>© {{ currentYear }} • Research Tracking System • Built for Excellence</p>
+    </footer>
+</div>
