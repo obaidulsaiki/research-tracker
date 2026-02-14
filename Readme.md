@@ -31,21 +31,27 @@ Generate professional, submission-ready portfolio reports with a single click.
 - **Collaborator Proximity**: Dedicated tracking of investigators and co-author stats.
 - **Normalized Filtering**: Sophisticated database exploration with case-insensitive, normalized filtering for document types and publishers.
 
+### 🖥️ Desktop Application (Electron Shell)
+The **Desktop Edition** provides a native-feeling experience for macOS, Windows, and Linux, wrapping the premium Angular interface into a dedicated window.
+- **Native Logic**: Custom application menus and deep system integration via Electron.
+- **Production Mode**: Automatically loads the production-compiled frontend for maximum speed.
+- **Packaging Ready**: Integrated with **electron-builder** for generating standalone `.exe` or `.dmg` installers.
+
 ---
 
 ## 🛠️ Technical Deep Dive
 
 ### High-Performance Frontend
 - **Framework**: Angular 21 (Signals Architecture)
-- **Typography**: "Plus Jakarta Sans" & "Outfit" for cinematic readability.
-- **Performance**: Reactive data flows using Angular Signals for zero-latency UI updates.
+- **Typography**: "Plus Jakarta Sans" & "Outfit" for readability.
+- **Performance**: Reactive data flows using Angular Signals.
 - **Print Engine**: Dedicated internal CSS injection for high-fidelity PDF rendering.
 
 ### Robust Backend Infrastructure
 - **Framework**: Spring Boot 4.x / Java 17
 - **Database**: PostgreSQL with Hibernate/JPA.
-- **Data Security**: Secure service-level logic for research metrics and history logs.
-- **Interoperability**: Advanced CSV/Excel processing engine with smart duplicate detection.
+- **Data Security**: Secure service-level logic for research metrics.
+- **Interoperability**: Advanced CSV/Excel processing engine.
 
 ---
 
@@ -54,40 +60,32 @@ Generate professional, submission-ready portfolio reports with a single click.
 ```text
 research-tracker/
 ├── backend/            # Executive Spring Boot Engine
-│   ├── src/main/java/  # Services, Controllers, Entities, Repositories
-│   └── src/resources/  # Database & Spring configuration
 ├── frontend/           # Premium Angular Interface
-│   ├── src/app/        # Domain-driven components (Dashboard, Tabs, Modals)
-│   ├── src/services/   # Reactive data providers & API clients
-│   └── src/styles.css  # Global design system & animations
-├── desktop/            # Native Desktop Shell (Electron Integration WIP)
-└── docs/               # Technical designs & project walkthroughs
+├── desktop/            # Native Desktop Shell (Electron)
+└── docs/               # Technical designs & walkthroughs
 ```
 
 ---
 
-## � Project Dependencies
+## 📦 Project Dependencies
 
 ### Backend Ecosystem (Spring Boot)
-- **Spring Boot Starter WebMVC**: Core framework for building RESTful APIs.
-- **Spring Boot Starter Data JPA**: Robust persistence layer with Hibernate support.
-- **PostgreSQL Database Driver**: Seamless integration with PostgreSQL 15+.
-- **Spring Boot Starter Validation**: Enterprise-grade data validation.
-- **Project Lombok**: Reducing boilerplate code for entities and DTOs.
-- **OpenCSV (5.9)**: Advanced engine for high-performance CSV data processing.
-- **Spring Boot DevTools**: Accelerated development with hot-reloading.
+- **Spring Boot Starter WebMVC**: RESTful API framework.
+- **Spring Boot Starter Data JPA**: Persistence layer.
+- **PostgreSQL Database Driver**: DB integration.
+- **Project Lombok**: Reducing boilerplate code.
+- **OpenCSV (5.9)**: High-performance CSV processing.
 
 ### Frontend Ecosystem (Angular)
-- **Angular 21 (Core, Signals)**: The latest reactive frontend architecture.
-- **Angular SSR (Express)**: Server-side rendering for superior performance and SEO.
-- **RxJS (7.8)**: Sophisticated reactive programming for data streams.
-- **read-excel-file**: Specialized library for client-side Excel data ingestion.
-- **Vitest**: Next-generation testing framework for rapid verification.
-- **Plus Jakarta Sans**: Custom typography for premium exhibition aesthetics.
+- **Angular 21 (Core, Signals)**: Reactive architecture.
+- **Angular SSR**: Server-side rendering performance.
+- **RxJS (7.8)**: Reactive data streams.
+- **read-excel-file**: Excel ingestion.
+- **Electron (31.x)**: Desktop shell and native OS bridge.
 
 ---
 
-## �🚀 Getting Started
+## 🚀 Getting Started
 
 ### 1. Database Configuration (PostgreSQL)
 Create a database named `research_tracker` and update the `backend/src/main/resources/application.properties` file:
