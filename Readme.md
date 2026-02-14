@@ -27,9 +27,10 @@ Generate professional, submission-ready portfolio reports with a single click.
 - **DOI Metadata Integration**: Automatic fetching of citation metadata via Crossref API integration.
 
 ### 📊 Advanced Analytics & Tracking
-- **Interactive Distribution Charts**: Visualize your research spread across different document types and publishers.
-- **Collaborator Proximity**: Dedicated tracking of investigators and co-author stats.
-- **Normalized Filtering**: Sophisticated database exploration with case-insensitive, normalized filtering for document types and publishers.
+- **Interactive Distribution Charts**: Visualize your research spread across document types and publishers.
+- **Normalized Filtering**: Sophisticated case-insensitive filtering for project records.
+- **Cross-platform Desktop Client**: Powered by **Electron** for a native experience on Windows, macOS, and Linux.
+
 
 ### 🖥️ Desktop Application (Electron Shell)
 The **Desktop Edition** provides a native-feeling experience for macOS, Windows, and Linux, wrapping the premium Angular interface into a dedicated window.
@@ -107,7 +108,15 @@ cd frontend
 npm install
 npm start
 ```
-🔗 **Access**: `http://localhost:4200`
+🔗 **Web Access**: `http://localhost:4200`
+
+### 4. Desktop Launch (Electron)
+```bash
+cd desktop
+npm install
+npm start
+```
+*(Ensure the backend is running for full functionality)*
 
 ---
 
