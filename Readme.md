@@ -86,7 +86,19 @@ research-tracker/
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Zero-Hassle Quick Start (For Consumers)
+
+The ultimate way to run Research Tracker as a **True Native Desktop App** is to use a standalone executable.
+
+1.  **Generate Standalone App**: Double-click **`Build-Dist.bat`** in the root. This will automatically compile the backend, frontend, and desktop shell into a single package.
+2.  **Run the Executable**: Go to `desktop/dist/` and run the **Portable EXE**.
+    - **No Hassle**: No terminals, no `npm start`, no `mvnw` needed.
+    - **Self-Starting**: The app automatically launches the backend invisibly in the background.
+    - **Portable**: You can copy this `.exe` anywhere and it just works!
+
+---
+
+## ⚙️ Development Setup (For Researchers/Developers)
 
 ### 1. Database Configuration (PostgreSQL)
 Create a database named `research_tracker` and update the `backend/src/main/resources/application.properties` file:
@@ -102,7 +114,7 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-### 3. Frontend Initialization
+### 3. Frontend Initialization (Web)
 ```bash
 cd frontend
 npm install
@@ -116,7 +128,7 @@ cd desktop
 npm install
 npm start
 ```
-*(Ensure the backend is running for full functionality)*
+*(Tip: Use **Run-App.bat** instead to launch both Backend and Desktop at once!)*
 
 ---
 

@@ -21,5 +21,31 @@
   "devDependencies": {
     "electron": "^31.0.0",
     "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.research.tracker",
+    "productName": "Research Tracker",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "index.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend/target/backend-0.0.1-SNAPSHOT.jar",
+        "to": "backend.jar"
+      },
+      {
+        "from": "../frontend/dist/frontend/browser",
+        "to": "frontend"
+      }
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "../frontend/public/favicon.svg"
+    }
   }
 }

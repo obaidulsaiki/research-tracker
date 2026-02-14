@@ -450,7 +450,22 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
     if (this.isQuartileDisabled() && !this.paper.publication!.impactFactor) {
       this.paper.publication!.impactFactor = 'NONE';
     }
+
+    // Sanitize dates to avoid sending empty strings which break LocalDate deserialization
+    if (!this.paper.submissionDate) this.paper.submissionDate = undefined;
+    if (!this.paper.decisionDate) this.paper.decisionDate = undefined;
+    if (!this.paper.publicationDate) this.paper.publicationDate = undefined;
+
+    if (this.paper.pid === null || this.paper.pid === undefined) this.paper.pid = 0;
+    if (this.paper.authorPlace === null || this.paper.authorPlace === undefined) this.paper.authorPlace = 1;
+
     event.preventDefault();
-    this.researchService.save(this.paper).subscribe(() => this.close.emit());
+    this.researchService.save(this.paper).subscribe({
+      next: () => this.close.emit(),
+      error: (err) => {
+        console.error('Failed to save research:', err);
+        alert('Failed to save: ' + (err.error?.message || err.message || 'Unknown error'));
+      }
+    });
   }
 }

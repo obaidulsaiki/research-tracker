@@ -60,7 +60,7 @@ export class DashboardComponent implements OnInit {
 
   availablePublishers = computed(() => {
     const pubs = (this.researchItems()
-      .map(i => i.publication?.name?.toUpperCase().trim())
+      .map(i => (i.publication?.name || '').trim())
       .filter(p => !!p && p !== '---' && p !== '-' && p !== '_' && p !== 'UNKNOWN') as string[]);
     return [...new Set(pubs)].sort();
   });
@@ -242,10 +242,30 @@ export class DashboardComponent implements OnInit {
 
   positionDistribution = computed(() => {
     const items = this.researchItems();
+    // Target author for ownership calculation (will be replaced by logged-in user later)
+    const targetAuthor = "Obaidul Haque";
+
     // Pre-initialize with numerical keys for consistency
     const dist: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0 };
+
     items.forEach(i => {
-      if (i.authorPlace) {
+      // Logic: Find the index of the target author in the authors list
+      if (i.authors && i.authors.length > 0) {
+        const targetClean = this.cleanName(targetAuthor).toLowerCase();
+
+        const idx = i.authors.findIndex(a => {
+          const authClean = this.cleanName(a.name).toLowerCase();
+          // Flexible matching: check if normalized names contain each other
+          return authClean.includes(targetClean) || targetClean.includes(authClean);
+        });
+
+        if (idx !== -1) {
+          const place = String(idx + 1);
+          dist[place] = (dist[place] || 0) + 1;
+        }
+      }
+      // Fallback: If no authors list but explicit place is set (legacy behavior)
+      else if (i.authorPlace) {
         const p = String(i.authorPlace);
         dist[p] = (dist[p] || 0) + 1;
       }
@@ -347,6 +367,10 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.loadInitialData();
+  }
+
+  loadInitialData() {
     this.researchService.loadAll();
     this.researchService.loadAnalytics();
     this.researchService.loadHistory();
@@ -864,7 +888,10 @@ export class DashboardComponent implements OnInit {
     const file = event.target.files[0];
     if (file) {
       this.researchService.importCsv(file).subscribe({
-        next: () => alert('CSV Imported Successfully!'),
+        next: () => {
+          alert('CSV Imported Successfully!');
+          this.loadInitialData(); // Refresh the table
+        },
         error: (err) => alert('Failed to import CSV: ' + err.message)
       });
     }

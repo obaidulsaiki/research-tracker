@@ -2,10 +2,10 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-portfolio-hero',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-portfolio-hero',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <!-- NAVIGATION -->
     <nav class="public-nav">
       <div class="container nav-wrap">
@@ -44,7 +44,7 @@ import { CommonModule } from '@angular/common';
       </div>
     </section>
   `,
-    styles: [`
+  styles: [`
     :host { display: contents; }
     .container { max-width: 1000px; margin: 0 auto; padding: 0 2rem; }
 
@@ -67,42 +67,60 @@ import { CommonModule } from '@angular/common';
 
     /* HERO SECTION */
     .hero-section {
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
       padding: 8rem 0 10rem; color: white;
       text-align: center; position: relative;
       overflow: hidden;
     }
     .hero-section::before {
       content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: radial-gradient(circle at 20% 30%, rgba(67, 56, 202, 0.4) 0%, transparent 50%),
-                  radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.2) 0%, transparent 50%);
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2394a3b8' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
     }
     .hero-content { position: relative; z-index: 1; }
     .profile-badge {
-      display: inline-block; padding: 0.5rem 1.25rem; background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2); border-radius: 100px;
-      font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; margin-bottom: 2rem;
-      backdrop-filter: blur(4px);
+      display: inline-block; padding: 0.5rem 1.5rem; background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 2px;
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.2em; margin-bottom: 2rem;
+      color: var(--p-gold); text-transform: uppercase; font-family: var(--font-body);
     }
-    .hero-section h1 { font-size: 4rem; font-weight: 900; letter-spacing: -0.04em; margin-bottom: 1.5rem; line-height: 1; }
-    .hero-subtext { font-size: 1.25rem; color: rgba(255,255,255,0.7); max-width: 600px; margin: 0 auto 4rem; line-height: 1.6; }
+    .hero-section h1 { 
+      font-family: var(--font-heading);
+      font-size: 4.5rem; font-weight: 700; letter-spacing: -0.02em; 
+      margin-bottom: 1.5rem; line-height: 1.1;
+      background: linear-gradient(to bottom, #fff, #94a3b8);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-subtext { 
+      font-family: var(--font-body);
+      font-size: 1.15rem; color: var(--p-muted); 
+      max-width: 600px; margin: 0 auto 5rem; line-height: 1.7; font-weight: 300;
+    }
 
     /* STATS RIBBON */
     .stats-ribbon {
-      display: inline-flex; align-items: center; gap: 3rem;
-      background: rgba(255,255,255,0.05); padding: 1.5rem 3rem;
-      border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
-      backdrop-filter: blur(12px); box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      display: inline-flex; align-items: center; gap: 4rem;
+      background: rgba(15, 23, 42, 0.6); padding: 1.5rem 4rem;
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 0;
+      backdrop-filter: blur(12px); 
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02), 0 20px 40px rgba(0,0,0,0.4);
     }
     .stat-item { display: flex; flex-direction: column; align-items: center; }
-    .stat-val { font-size: 2rem; font-weight: 900; color: white; line-height: 1; margin-bottom: 0.25rem; }
-    .stat-label { font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.05em; }
-    .stat-sep { width: 1px; height: 40px; background: rgba(255,255,255,0.1); }
+    .stat-val { 
+      font-family: var(--font-heading);
+      font-size: 2.5rem; font-weight: 700; color: white; line-height: 1; margin-bottom: 0.5rem; 
+    }
+    .stat-label { 
+      font-family: var(--font-body);
+      font-size: 0.7rem; font-weight: 600; color: var(--p-gold); 
+      text-transform: uppercase; letter-spacing: 0.1em; 
+    }
+    .stat-sep { width: 1px; height: 50px; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.1), transparent); }
   `]
 })
 export class PortfolioHeroComponent {
-    @Input() itemCount: number = 0;
-    @Input() q1Count: number = 0;
-    @Input() publishedCount: number = 0;
-    @Output() onBack = new EventEmitter<void>();
+  @Input() itemCount: number = 0;
+  @Input() q1Count: number = 0;
+  @Input() publishedCount: number = 0;
+  @Output() onBack = new EventEmitter<void>();
 }

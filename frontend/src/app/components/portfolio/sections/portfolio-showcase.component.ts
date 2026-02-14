@@ -19,7 +19,7 @@ import { Research } from '../../../services/research.service';
             <div class="gem-card slide-up">
               <div class="card-glass"></div>
               <div class="gem-header">
-                <span class="type-pill">{{ item.publication?.type || 'ARTICLE' }}</span>
+                <span class="type-pill">{{ formatPublisher(item.publication?.type || 'ARTICLE') }}</span>
                 @if (item.publication?.quartile && item.publication!.quartile !== 'N/A') {
                   <span class="q-badge" [class]="item.publication!.quartile.toLowerCase().replace(' ', '-')">
                     {{ item.publication!.quartile }}
@@ -36,7 +36,7 @@ import { Research } from '../../../services/research.service';
                 }
               </div>
               <div class="gem-footer">
-                <span class="pub-name">{{ item.publication?.name || '---' }}</span>
+                <span class="pub-name">{{ formatPublisher(item.publication?.name || '---') }}</span>
                 <span class="pub-year">{{ item.publication?.year || '---' }}</span>
               </div>
             </div>
@@ -47,41 +47,59 @@ import { Research } from '../../../services/research.service';
   `,
   styles: [`
     :host { display: contents; }
-    .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
-    .section-icon { font-size: 2rem; }
-    .section-header h2 { font-size: 1.75rem; font-weight: 900; color: #4338ca; letter-spacing: -0.02em; }
+    /* SHOWCASE */
+    .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 3rem; }
+    .section-icon { font-size: 1.5rem; color: var(--p-gold); }
+    .section-header h2 { 
+      font-family: var(--font-heading);
+      font-size: 2rem; font-weight: 700; color: var(--p-text); letter-spacing: -0.02em; 
+    }
 
-    .gems-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 2rem; margin-bottom: 8rem; }
+    .gems-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 8rem; }
     .gem-card {
-      position: relative; background: white; padding: 2.5rem; border-radius: 24px;
-      border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+      position: relative; background: var(--p-surface); padding: 2.5rem; 
+      border: 1px solid rgba(255,255,255,0.05); border-radius: 2px;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: default;
     }
-    .gem-card:hover { transform: translateY(-8px); box-shadow: 0 30px 60px rgba(0,0,0,0.08); border-color: #4338ca; }
-    .gem-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .gem-card:hover { 
+      transform: translateY(-4px); 
+      border-color: var(--p-gold); box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
+    }
+    .gem-card::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+
+    .gem-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 2rem; }
     .type-pill { 
-      padding: 0.35rem 0.85rem; background: #f1f5f9; color: #64748b; 
-      font-size: 0.7rem; font-weight: 800; border-radius: 100px; text-transform: uppercase;
+      padding: 0.35rem 0.85rem; background: rgba(255,255,255,0.05); color: var(--p-muted); 
+      font-size: 0.65rem; font-weight: 600; border-radius: 2px; text-transform: uppercase; letter-spacing: 0.1em;
+      border: 1px solid rgba(255,255,255,0.05);
     }
+    
     .q-badge { 
-      padding: 0.35rem 0.85rem; border-radius: 100px; font-size: 0.75rem; font-weight: 900;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 0.25rem 0.75rem; border-radius: 2px; font-size: 0.7rem; font-weight: 700; 
+      color: #0f172a; border: 1px solid rgba(255,255,255,0.1);
     }
-    .q-badge.q1 { background: linear-gradient(135deg, #fbbf24, #d97706); color: white; }
-    .q-badge.q2 { background: linear-gradient(135deg, #94a3b8, #475569); color: white; }
-    .q-badge.q3 { background: linear-gradient(135deg, #10b981, #047857); color: white; }
-    .q-badge.q4 { background: linear-gradient(135deg, #f43f5e, #be123c); color: white; }
-    .q-badge.non-predatory { background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; }
-    .q-badge.non-indexed { background: linear-gradient(135deg, #64748b, #334155); color: white; }
-    .gem-title { font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1.4; margin-bottom: 1.5rem; }
-    .gem-authors { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
-    .author-tag { font-size: 0.875rem; font-weight: 600; color: #64748b; }
+    .q-badge.q1 { background: var(--p-gold); }
+    .q-badge.q2 { background: #e2e8f0; color: #475569; }
+    .q-badge.q3 { background: #94a3b8; color: #0f172a; }
+    .q-badge.q4 { background: #475569; color: #cbd5e1; }
+    
+    .gem-title { 
+      font-family: var(--font-heading);
+      font-size: 1.5rem; font-weight: 700; color: var(--p-text); 
+      line-height: 1.3; margin-bottom: 1.5rem; 
+    }
+    .gem-authors { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2.5rem; line-height: 1.6; }
+    .author-tag { font-family: var(--font-body); font-size: 0.9rem; color: var(--p-muted); }
+    
     .gem-footer { 
       display: flex; justify-content: space-between; align-items: center; 
-      padding-top: 1.5rem; border-top: 1px solid #f1f5f9;
+      padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);
     }
-    .pub-name { font-weight: 700; color: #4338ca; font-size: 0.9375rem; }
-    .pub-year { font-weight: 800; color: #94a3b8; font-family: monospace; }
+    .pub-name { font-weight: 600; color: var(--p-gold); font-size: 0.85rem; letter-spacing: 0.02em; text-transform: uppercase;}
+    .pub-year { font-family: var(--font-heading); font-weight: 700; color: var(--p-muted); opacity: 0.5; }
 
     .slide-up { animation: slideUp 0.6s ease-out both; }
     @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -89,4 +107,25 @@ import { Research } from '../../../services/research.service';
 })
 export class PortfolioShowcaseComponent {
   @Input() items: Research[] = [];
+
+  formatPublisher(name: string): string {
+    if (!name) return '';
+    const acronyms = new Set(['ICCIT', 'ICECTE', 'ICEFRONT', 'PECCII', 'QPAIN', 'IEEE', 'ACM', 'SN', 'MDPI', 'IUBAT', 'IF']);
+
+    // Check if the whole string is a known acronym
+    if (acronyms.has(name.trim().toUpperCase())) {
+      return name.trim().toUpperCase();
+    }
+
+    // Heuristic: If name is already mixed case (e.g. from backend), trust it.
+    // If name is ALL CAPS, try to Title Case it but preserve acronyms.
+    if (name === name.toUpperCase() && name.length > 4) {
+      return name.split(' ').map(w => {
+        if (acronyms.has(w.toUpperCase())) return w.toUpperCase();
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      }).join(' ');
+    }
+
+    return name;
+  }
 }

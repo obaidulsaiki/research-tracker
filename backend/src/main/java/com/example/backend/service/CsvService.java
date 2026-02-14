@@ -78,86 +78,97 @@ public class CsvService {
         List<ResearchDTO> researches = new ArrayList<>();
         try (CSVReader reader = new CSVReader(new InputStreamReader(inputStream))) {
             String[] line;
-            boolean firstLine = true;
+            java.util.Map<String, Integer> headerMap = new java.util.HashMap<>();
+            boolean headerParsed = false;
+
             while ((line = reader.readNext()) != null) {
-                if (firstLine) {
-                    firstLine = false;
+                // SKIP EMPTY LINES
+                if (line.length == 0)
+                    continue;
+
+                // HEADER DETECTION (First line or explicit header content)
+                if (!headerParsed) {
+                    // Build header map
+                    for (int i = 0; i < line.length; i++) {
+                        headerMap.put(line[i].trim().toLowerCase(), i);
+                    }
+                    headerParsed = true;
+                    continue; // Skip the header row itself
+                }
+
+                // If we encounter a repeated header line, skip it
+                if (line.length > 3
+                        && (line[0].equalsIgnoreCase("NO") || (line.length > 3 && line[3].equalsIgnoreCase("Title")))) {
                     continue;
                 }
 
-                if (line.length < 5)
-                    continue;
-                if (line[0].equalsIgnoreCase("NO") || line[3].equalsIgnoreCase("Title"))
-                    continue;
+                if (line.length < 3)
+                    continue; // Skip malformed short lines
 
                 try {
                     ResearchDTO dto = new ResearchDTO();
-                    dto.setStatus(parseStatus(line[1]));
-                    if (line.length > 2)
-                        dto.setPid(parseInt(line[2]));
-                    if (line.length > 3)
-                        dto.setTitle(line[3]);
+
+                    // BASIC FIELDS (Use Map if available, else Fallback to new standard indices)
+                    dto.setStatus(parseStatus(getVal(line, headerMap, "status", 1)));
+                    dto.setPid(parseInt(getVal(line, headerMap, "pid", 2)));
+                    dto.setTitle(getVal(line, headerMap, "title", 3));
 
                     PublicationDTO p = new PublicationDTO();
                     dto.setPublication(p);
 
-                    // New 23-column format or intermediate formats
-                    if (line.length >= 16) {
-                        p.setType(line[4]);
-                        p.setName(line[5]);
-                        p.setPublisher(line[6]);
-                        p.setYear(line[7]);
-                        p.setVenue(line[8]);
-                        p.setImpactFactor(line[9]);
-                        p.setQuartile(line[10]);
-                        p.setUrl(parseUrl(line[11]));
-                        dto.setAuthors(parseAuthors(line[12]));
-                        dto.setOverleafUrl(parseUrl(line[13]));
-                        dto.setDriveUrl(parseUrl(line[14]));
-                        dto.setDatasetUrl(parseUrl(line[15]));
+                    // EXTRACT FIELDS DYNAMICALLY
+                    // Note: We use the "New Standard" indices as default if header lookup fails
+                    // This preserves backward compatibility for files matching the current export
+                    // format exactly
 
-                        // New fields for version with 17+ columns
-                        if (line.length > 16)
-                            dto.setPublicVisibility(parseVisibility(line[16]));
-                        if (line.length > 17)
-                            dto.setFeatured(Boolean.parseBoolean(line[17]));
-                        if (line.length > 18)
-                            dto.setTags(parseTags(line[18]));
-                        if (line.length > 19)
-                            dto.setNotes(line[19]);
-                        if (line.length > 20)
-                            dto.setSubmissionDate(parseDate(line[20]));
-                        if (line.length > 21)
-                            dto.setDecisionDate(parseDate(line[21]));
-                        if (line.length > 22)
-                            dto.setPublicationDate(parseDate(line[22]));
+                    p.setType(getVal(line, headerMap, "type", 4));
+                    p.setName(toTitleCase(getVal(line, headerMap, "publication name", 5)));
+                    p.setPublisher(toTitleCase(getVal(line, headerMap, "publisher", 6)));
+                    p.setYear(getVal(line, headerMap, "year", 7));
+                    p.setVenue(toTitleCase(getVal(line, headerMap, "venue", 8)));
+                    p.setImpactFactor(getVal(line, headerMap, "impact factor", 9));
+                    p.setQuartile(getVal(line, headerMap, "quartile", 10));
+                    p.setUrl(parseUrl(getVal(line, headerMap, "direct link", 11)));
 
-                        if (dto.getPublicVisibility() == null)
-                            dto.setPublicVisibility(PublicVisibility.PRIVATE);
-                    } else if (line.length >= 13) {
-                        // Legacy 13-15 column formats
-                        p.setType(line[4]);
-                        dto.setAuthorPlace(parseInt(line[5]));
-                        dto.setAuthors(parseAuthors(line[6]));
-                        p.setName(line[7]);
-                        p.setPublisher(line[7]);
-                        p.setYear(line[8]);
-                        p.setImpactFactor(line[9]);
-                        if (line.length > 10)
-                            dto.setOverleafUrl(parseUrl(line[10]));
-                        if (line.length > 11)
-                            dto.setPaperUrl(parseUrl(line[11]));
-                        if (line.length > 12)
-                            dto.setDriveUrl(parseUrl(line[12]));
-                        if (line.length > 13)
-                            dto.setDatasetUrl(parseUrl(line[13]));
-                        dto.setPublicVisibility(PublicVisibility.PRIVATE);
-                    } else {
-                        // Standard fallback
-                        p.setType(line[4]);
-                        p.setName(line.length > 5 ? line[5] : "NONE");
-                        dto.setPublicVisibility(PublicVisibility.PRIVATE);
+                    // CRITICAL: Authors vs Publication Name
+                    // If map has "authors", it will use that index. If not, it falls back to 12.
+                    dto.setAuthors(parseAuthors(getVal(line, headerMap, "authors", 12)));
+
+                    dto.setOverleafUrl(parseUrl(getVal(line, headerMap, "overleaf", 13)));
+                    dto.setDriveUrl(parseUrl(getVal(line, headerMap, "drive", 14)));
+                    dto.setDatasetUrl(parseUrl(getVal(line, headerMap, "dataset", 15)));
+
+                    dto.setPublicVisibility(parseVisibility(getVal(line, headerMap, "visibility", 16)));
+
+                    String featuredStr = getVal(line, headerMap, "featured", 17);
+                    dto.setFeatured(featuredStr != null && Boolean.parseBoolean(featuredStr));
+
+                    dto.setTags(parseTags(getVal(line, headerMap, "tags", 18)));
+                    dto.setNotes(getVal(line, headerMap, "notes", 19));
+
+                    dto.setSubmissionDate(parseDate(getVal(line, headerMap, "submission date", 20)));
+                    dto.setDecisionDate(parseDate(getVal(line, headerMap, "decision date", 21)));
+                    dto.setPublicationDate(parseDate(getVal(line, headerMap, "publication date", 22)));
+
+                    // FALLBACK FOR LEGACY IF DATA SEEMS MISSING
+                    // Check if we accidentally got "Authors" (column 12 default) empty but have
+                    // data in column 6 (Legacy Authors)
+                    // Only do this if headers were NOT found for "authors" to avoid overriding
+                    // correct mapping
+                    if (dto.getAuthors().isEmpty() && !headerMap.containsKey("authors") && line.length > 6) {
+                        // Try extracting from legacy index 6 if it looks like author data
+                        List<AuthorDTO> legacyAuthors = parseAuthors(line[6]);
+                        if (!legacyAuthors.isEmpty()) {
+                            dto.setAuthors(legacyAuthors);
+                            // If we found authors at 6, likely 5 is author place and 7 is publication name
+                            if (line.length > 7)
+                                p.setName(line[7]);
+                        }
                     }
+
+                    if (dto.getPublicVisibility() == null)
+                        dto.setPublicVisibility(PublicVisibility.PRIVATE);
+
                     researches.add(dto);
                 } catch (Exception e) {
                     System.err.println("Error parsing CSV line: " + e.getMessage());
@@ -165,6 +176,16 @@ public class CsvService {
             }
         }
         return researches;
+    }
+
+    private String getVal(String[] line, java.util.Map<String, Integer> map, String key, int defaultIdx) {
+        if (map.containsKey(key) && map.get(key) < line.length) {
+            return line[map.get(key)];
+        }
+        if (defaultIdx < line.length) {
+            return line[defaultIdx];
+        }
+        return null;
     }
 
     private PublicVisibility parseVisibility(String val) {
@@ -251,5 +272,47 @@ public class CsvService {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    private String toTitleCase(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+
+        // Special handling for known acronyms (Conferences, Organizations)
+        java.util.Set<String> acronyms = new java.util.HashSet<>(java.util.Arrays.asList(
+                "ICCIT", "ICECTE", "ICEFRONT", "PECCII", "QPAIN", "IEEE", "ACM", "SN", "MDPI", "ACM", "IUBAT"));
+
+        // If the whole string is an acronym, return it as is
+        if (acronyms.contains(input.trim().toUpperCase())) {
+            return input.trim().toUpperCase();
+        }
+
+        // Standard Title Case logic (Capitalize first letter of each word)
+        StringBuilder titleCase = new StringBuilder();
+        boolean nextTitleCase = true;
+
+        // Split by words to check for acronyms within a longer string
+        String[] words = input.toLowerCase().split("\\s+");
+        for (int i = 0; i < words.length; i++) {
+            String w = words[i];
+            if (acronyms.contains(w.toUpperCase())) {
+                titleCase.append(w.toUpperCase());
+            } else {
+                for (char c : w.toCharArray()) {
+                    if (nextTitleCase) {
+                        c = Character.toTitleCase(c);
+                        nextTitleCase = false;
+                    }
+                    titleCase.append(c);
+                }
+            }
+            if (i < words.length - 1) {
+                titleCase.append(" ");
+                nextTitleCase = true;
+            }
+        }
+
+        return titleCase.toString();
     }
 }

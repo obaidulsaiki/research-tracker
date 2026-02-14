@@ -32,9 +32,11 @@ import { Research, Author } from '../../../services/research.service';
               <option value="all">Every Status</option>
               <option value="WORKING">Working</option>
               <option value="RUNNING">Running</option>
+              <option value="HYPOTHESIS">Hypothesis</option>
               <option value="ACCEPTED">Accepted</option>
               <option value="PUBLISHED">Published</option>
               <option value="REJECTED">Rejected</option>
+              <option value="WITHDRAWN">Withdrawn</option>
             </select>
           </div>
 
@@ -43,7 +45,7 @@ import { Research, Author } from '../../../services/research.service';
             <select class="p-select" [value]="filterType" (change)="onFilterChange('type', $event)">
               <option value="all">All Document Types</option>
               @for (t of availableTypes; track t) {
-                <option [value]="t">{{ t }}</option>
+                <option [value]="t">{{ t | titlecase }}</option>
               }
             </select>
           </div>
@@ -63,7 +65,7 @@ import { Research, Author } from '../../../services/research.service';
             <select class="p-select" [value]="filterPublisher" (change)="onFilterChange('publisher', $event)">
               <option value="all">All Journals/Publishers</option>
               @for (p of availablePublishers; track p) {
-                <option [value]="p">{{ p }}</option>
+                <option [value]="p">{{ formatPublisher(p) }}</option>
               }
             </select>
           </div>
@@ -87,6 +89,7 @@ import { Research, Author } from '../../../services/research.service';
       <div class="p-table-wrap">
         <table class="p-table">
           <thead>
+            <tr>
             <tr>
               <th style="width: 70px; padding-left: 2rem;">#</th>
               <th style="width: 150px">
@@ -113,18 +116,39 @@ import { Research, Author } from '../../../services/research.service';
                   </span>
                 </div>
               </th>
-              <th style="width: 400px">Collaborators</th>
-              <th style="width: 280px">Publication</th>
+              <th style="width: 400px">
+                <div class="sortable-header" (click)="toggleSort('authors')">
+                  Collaborators
+                  <span class="sort-icon" [class.active]="sortField === 'authors'">
+                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </div>
+              </th>
+              <th style="width: 280px">
+                <div class="sortable-header" (click)="toggleSort('publication.name')">
+                  Publication
+                  <span class="sort-icon" [class.active]="sortField === 'publication.name'">
+                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </div>
+              </th>
               <th style="width: 100px">
-                <div class="sortable-header" (click)="toggleSort('pubYear')">
+                <div class="sortable-header" (click)="toggleSort('publication.year')">
                   Year
-                  <span class="sort-icon" [class.active]="sortField === 'pubYear'">
+                  <span class="sort-icon" [class.active]="sortField === 'publication.year'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>
               </th>
               <th style="width: 280px">Project Resources</th>
-              <th style="width: 140px">Visibility</th>
+              <th style="width: 140px">
+                <div class="sortable-header" (click)="toggleSort('publicVisibility')">
+                  Visibility
+                  <span class="sort-icon" [class.active]="sortField === 'publicVisibility'">
+                    {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </div>
+              </th>
               <th style="width: 140px; text-align: center; position: sticky; right: 0; background: #fcfdfe; z-index: 11; border-bottom: 2px solid var(--p-bg-subtle);">Actions</th>
             </tr>
           </thead>
@@ -143,7 +167,7 @@ import { Research, Author } from '../../../services/research.service';
                     <div class="title-main" style="white-space: normal; font-weight: 800; line-height: 1.5; font-size: 0.95rem; color: var(--p-text);">{{ item.title || 'Untitled Research' }}</div>
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                       <span class="p-badge" style="background: var(--p-bg-subtle); color: var(--p-accent); font-size: 0.65rem; border: 1px solid var(--p-border); border-radius: 6px;">
-                        {{ item.publication?.type || 'ARTICLE' }}
+                        {{ formatPublisher(item.publication?.type || 'ARTICLE') }}
                       </span>
                       @if (item.featured) { 
                         <span class="p-badge" style="background: var(--p-gradient); color: white; font-size: 0.6rem; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);">★ FEATURED</span>
@@ -163,14 +187,14 @@ import { Research, Author } from '../../../services/research.service';
                 </td>
                 <td>
                   <div style="font-weight: 800; font-size: 0.9rem; margin-bottom: 6px; color: var(--p-text);">
-                    {{ item.publication?.name || item.publication?.publisher || 'NONE' }}
+                    {{ formatPublisher(item.publication?.name || item.publication?.publisher || 'NONE') }}
                   </div>
                   <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
                     @if (item.publication) {
                       @if (item.publication.type && item.publication.type.toUpperCase().trim() === 'CONFERENCE') {
                         <!-- ONLY SHOW VENUE FOR CONFERENCES -->
                         <span class="p-badge" style="background: #fdf2f8; color: #9d174d; font-size: 0.65rem; font-weight: 800; border: 1px solid #fce7f3;">
-                          📍 {{ item.publication.venue || 'NONE' }}
+                          📍 {{ formatPublisher(item.publication.venue || 'NONE') }}
                         </span>
                       } @else {
                         <!-- SHOW IF AND QUARTILE FOR JOURNALS/OTHERS -->
@@ -282,6 +306,26 @@ import { Research, Author } from '../../../services/research.service';
     .p-badge[data-q="Q4"] { background: #fff1f2 !important; color: #9f1239 !important; border-color: #fda4af !important; }
     .p-badge[data-q="NON-PREDATORY"] { background: #eff6ff !important; color: #1e40af !important; border-color: #93c5fd !important; }
     .p-badge[data-q="NON INDEXED"] { background: #f8fafc !important; color: #64748b !important; border-color: #e2e8f0 !important; }
+    
+    .author-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #475569;
+        transition: all 0.2s ease;
+    }
+    .author-chip:hover {
+        background: white;
+        border-color: #cbd5e1;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
   `]
 })
 export class ArchiveTabComponent {
@@ -314,10 +358,10 @@ export class ArchiveTabComponent {
   protected readonly Math = Math;
 
   // SORTING STATE
-  sortField: keyof Research | 'pubYear' = 'pubYear';
+  sortField: string = 'publication.year';
   sortDirection: 'asc' | 'desc' = 'desc';
 
-  toggleSort(field: any) {
+  toggleSort(field: string) {
     if (this.sortField === field) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
@@ -328,24 +372,61 @@ export class ArchiveTabComponent {
 
   get sortedPapers() {
     return [...this.papers].sort((a, b) => {
-      let valA: any, valB: any;
+      let valA = this.resolveValue(a, this.sortField);
+      let valB = this.resolveValue(b, this.sortField);
 
-      if (this.sortField === 'pubYear') {
-        valA = a.publication?.year || '';
-        valB = b.publication?.year || '';
-      } else {
-        valA = (a as any)[this.sortField] || '';
-        valB = (b as any)[this.sortField] || '';
+      // Handle Arrays (e.g. Authors) -> Join to string for sorting
+      if (Array.isArray(valA)) valA = valA.map((x: any) => x.name || x).join(', ');
+      if (Array.isArray(valB)) valB = valB.map((x: any) => x.name || x).join(', ');
+
+      // SPECIAL HANDLING: Year & PID should always be numeric sort if possible
+      const isNumericField = this.sortField.includes('year') || this.sortField === 'pid' || this.sortField === 'id';
+
+      if (isNumericField) {
+        // Extract numbers from strings (e.g. "2023" -> 2023, "Spring 2024" -> 2024)
+        const numA = this.parseNumeric(valA);
+        const numB = this.parseNumeric(valB);
+
+        // DEBUG LOGGING
+        if (this.sortField === 'pid') {
+          console.log(`Sorting PID: ${valA} (${numA}) vs ${valB} (${numB}) -> ${this.sortDirection}`, numA, numB);
+        }
+
+        // If both are 0 (invalid/missing), keep original order
+        if (numA === 0 && numB === 0) return 0;
+
+        return this.sortDirection === 'asc' ? numA - numB : numB - numA;
       }
 
-      if (typeof valA === 'string') {
+      // Default String Comparison
+      if (typeof valA === 'string' && typeof valB === 'string') {
         return this.sortDirection === 'asc'
           ? valA.localeCompare(valB)
           : valB.localeCompare(valA);
       }
 
-      return this.sortDirection === 'asc' ? valA - valB : valB - valA;
+      // Fallback for other types
+      return 0;
     });
+  }
+
+  // Helper to extract numbers from potential strings
+  private parseNumeric(val: any): number {
+    if (val == null) return 0;
+    if (typeof val === 'number') return val;
+
+    const s = String(val).trim();
+    if (!s || s === 'NONE' || s === 'undefined') return 0;
+
+    // Extract first sequence of digits
+    const match = s.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  }
+
+  // Helper to resolve nested paths like "publication.year" or "authors.length"
+  private resolveValue(item: any, path: string): any {
+    if (!item) return null;
+    return path.split('.').reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : null, item);
   }
 
   onFilterChange(key: string, event: any) {
@@ -354,5 +435,25 @@ export class ArchiveTabComponent {
 
   getAuthorList(item: Research): string {
     return (item.authors || []).map(a => a.name).join(', ');
+  }
+  formatPublisher(name: string): string {
+    if (!name) return '';
+    const acronyms = new Set(['ICCIT', 'ICECTE', 'ICEFRONT', 'PECCII', 'QPAIN', 'IEEE', 'ACM', 'SN', 'MDPI', 'IUBAT']);
+
+    // Check if the whole string is a known acronym
+    if (acronyms.has(name.trim().toUpperCase())) {
+      return name.trim().toUpperCase();
+    }
+
+    // Heuristic: If name is already mixed case (e.g. from backend), trust it.
+    // If name is ALL CAPS, try to Title Case it but preserve acronyms.
+    if (name === name.toUpperCase() && name.length > 4) {
+      return name.split(' ').map(w => {
+        if (acronyms.has(w.toUpperCase())) return w.toUpperCase();
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+      }).join(' ');
+    }
+
+    return name;
   }
 }
