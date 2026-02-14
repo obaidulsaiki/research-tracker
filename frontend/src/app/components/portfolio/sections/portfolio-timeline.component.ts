@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { Research } from '../../../services/research.service';
 
 @Component({
-    selector: 'app-portfolio-timeline',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-portfolio-timeline',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     <section class="timeline-section">
       <div class="section-header">
         <span class="section-icon">📚</span>
@@ -18,16 +18,16 @@ import { Research } from '../../../services/research.service';
           <div class="timeline-item slide-up">
             <div class="item-year">
               <span class="year-line"></span>
-              <span class="year-text">{{ item.publisherYear || '2024' }}</span>
+              <span class="year-text">{{ item.publication?.year || '2024' }}</span>
             </div>
             <div class="item-node"></div>
             <div class="item-card">
               <div class="item-meta">
                 <span class="status-indicator" [class]="item.status.toLowerCase()"></span>
-                {{ item.status }} • {{ item.paperType }}
+                {{ item.status }} • {{ item.publication?.type || 'ARTICLE' }}
               </div>
               <h4 class="item-title">{{ item.title }}</h4>
-              <p class="item-pub">{{ item.publisherName }}</p>
+              <p class="item-pub">{{ item.publication?.name || '---' }}</p>
             </div>
           </div>
         } @empty {
@@ -39,7 +39,7 @@ import { Research } from '../../../services/research.service';
       </div>
     </section>
   `,
-    styles: [`
+  styles: [`
     :host { display: contents; }
     .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
     .section-icon { font-size: 2rem; }
@@ -79,5 +79,5 @@ import { Research } from '../../../services/research.service';
   `]
 })
 export class PortfolioTimelineComponent {
-    @Input() items: Research[] = [];
+  @Input() items: Research[] = [];
 }

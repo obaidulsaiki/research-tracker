@@ -1,17 +1,25 @@
 {
-  "name": "desktop",
+  "name": "research-tracker-desktop",
   "version": "1.0.0",
-  "description": "",
+  "description": "Desktop application for Research Tracker",
   "main": "index.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "electron . --mode=development",
+    "package": "electron-builder build --windows"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "research",
+    "tracker",
+    "electron",
+    "angular"
+  ],
+  "author": "Obaidul Saiki",
+  "license": "MIT",
   "type": "commonjs",
+  "dependencies": {},
   "devDependencies": {
-    "electron": "^40.4.0"
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
   }
 }

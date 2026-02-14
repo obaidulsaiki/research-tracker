@@ -22,7 +22,7 @@ public class DatabaseFix implements CommandLineRunner {
             // 1. Delete authors where the name is purely symbols (using REGEXP_REPLACE if
             // available, else specific symbols)
             // SQL Standard / H2 / PostgreSql approach
-            jdbcTemplate.execute("DELETE FROM author WHERE TRIM(name) = '' OR name REGEXP '^[*†‡§]+$'");
+            jdbcTemplate.execute("DELETE FROM author WHERE TRIM(name) = '' OR name ~ '^[*†‡§]+$'");
 
             System.out.println("DATABASE FIX: Successfully dropped constraint and cleaned phantom authors.");
         } catch (Exception e) {

@@ -2,54 +2,60 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-download-tab',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
-    <section class="view-tab animate-fade-in">
-      <div class="analytics-grid">
+  selector: 'app-download-tab',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <section class="reveal">
+      <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
         <!-- EXCEL DOWNLOAD -->
-        <div class="data-card download-card slide-up">
-          <div class="download-icon excel">📊</div>
-          <div class="download-info">
-            <h3>Export to Excel</h3>
-            <p>Download your entire archive as a spreadsheet (.csv) optimized for Microsoft Excel and analysis.</p>
-            <span class="badge-count">{{ itemCount }} Records</span>
+        <div class="p-card" style="text-align: center; border-bottom: 6px solid #10b981;">
+          <div style="font-size: 3.5rem; margin-bottom: 1.5rem;">📊</div>
+          <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1rem;">Export to Excel</h3>
+          <p style="color: var(--p-text-muted); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.6;">
+            Download your entire archive as a spreadsheet optimized for Microsoft Excel and advanced analysis.
+          </p>
+          <div style="margin-bottom: 2rem;">
+            <span class="p-badge" style="background: #10b98120; color: #059669; padding: 8px 16px;">{{ itemCount }} Total Records</span>
           </div>
-          <button class="btn-primary" style="width: 100%; justify-content: center;" (click)="onExcel.emit()">Download XLSX</button>
+          <button class="btn-vibrant" style="width: 100%;" (click)="onExcel.emit()">Generate XLSX</button>
         </div>
 
         <!-- PDF DOWNLOAD -->
-        <div class="data-card download-card slide-up" style="animation-delay: 0.1s">
-          <div class="download-icon pdf">📄</div>
-          <div class="download-info">
-            <h3>Export to PDF</h3>
-            <p>Generate a professional PDF summary of your research portfolio using native print optimization.</p>
-            <span class="badge-count">{{ itemCount }} Records</span>
+        <div class="p-card" style="text-align: center; border-bottom: 6px solid var(--p-accent);">
+          <div style="font-size: 3.5rem; margin-bottom: 1.5rem;">📄</div>
+          <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1rem;">Professional PDF</h3>
+          <p style="color: var(--p-text-muted); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.6;">
+            Generate a high-end PDF portfolio summary suitable for academic applications and CV inclusion.
+          </p>
+          <div style="margin-bottom: 2rem;">
+            <span class="p-badge" style="background: var(--p-accent-muted); color: var(--p-accent); padding: 8px 16px;">Premium Layout</span>
           </div>
-          <button class="btn-primary" style="width: 100%; justify-content: center;" (click)="onPdf.emit()">Download PDF</button>
+          <button class="btn-vibrant" style="width: 100%;" (click)="onPdf.emit()">Download Portfolio</button>
         </div>
 
         <!-- CSV DOWNLOAD -->
-        <div class="data-card download-card slide-up" style="animation-delay: 0.2s">
-          <div class="download-icon csv">📄</div>
-          <div class="download-info">
-            <h3>Export to CSV</h3>
-            <p>Download a raw data file (.csv) compatible with all major scientific and data management tools.</p>
-            <span class="badge-count">{{ itemCount }} Records</span>
+        <div class="p-card" style="text-align: center; border-bottom: 6px solid var(--p-text-muted);">
+          <div style="font-size: 3.5rem; margin-bottom: 1.5rem;">💾</div>
+          <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1rem;">Standard CSV</h3>
+          <p style="color: var(--p-text-muted); font-size: 0.95rem; margin-bottom: 2rem; line-height: 1.6;">
+            Download a portable data file compatible with all major data science and management tools.
+          </p>
+          <div style="margin-bottom: 2rem;">
+            <span class="p-badge" style="background: var(--p-bg-alt); padding: 8px 16px;">Legacy Support</span>
           </div>
-          <button class="btn-secondary" style="width: 100%; justify-content: center;" (click)="onCsv.emit()">Download CSV</button>
+          <button class="btn-glass" style="width: 100%; font-weight: 700;" (click)="onCsv.emit()">Download CSV</button>
         </div>
       </div>
     </section>
   `,
-    styles: [`
+  styles: [`
     :host { display: contents; }
   `]
 })
 export class DownloadTabComponent {
-    @Input() itemCount: number = 0;
-    @Output() onExcel = new EventEmitter<void>();
-    @Output() onPdf = new EventEmitter<void>();
-    @Output() onCsv = new EventEmitter<void>();
+  @Input() itemCount: number = 0;
+  @Output() onExcel = new EventEmitter<void>();
+  @Output() onPdf = new EventEmitter<void>();
+  @Output() onCsv = new EventEmitter<void>();
 }

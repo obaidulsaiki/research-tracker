@@ -2,8 +2,10 @@ package com.example.backend.service;
 
 import com.example.backend.dto.AuthorDTO;
 import com.example.backend.dto.HistoryEntryDTO;
+import com.example.backend.dto.PublicationDTO;
 import com.example.backend.dto.ResearchDTO;
 import com.example.backend.entity.research.Author;
+import com.example.backend.entity.research.Publication;
 import com.example.backend.entity.research.HistoryEntry;
 import com.example.backend.entity.research.Research;
 import com.example.backend.repository.AuthorRepo;
@@ -120,8 +122,12 @@ public class ResearchService {
 
         stats.put("totalCount", all.size());
         stats.put("papersByType",
-                all.stream().collect(Collectors.groupingBy(r -> r.getPaperType() != null ? r.getPaperType() : "ARTICLE",
-                        Collectors.counting())));
+                all.stream()
+                        .collect(Collectors.groupingBy(
+                                r -> (r.getPublication() != null && r.getPublication().getType() != null)
+                                        ? r.getPublication().getType()
+                                        : "ARTICLE",
+                                Collectors.counting())));
         stats.put("papersByStatus",
                 all.stream().collect(Collectors.groupingBy(r -> r.getStatus() != null ? r.getStatus() : "WORKING",
                         Collectors.counting())));
@@ -151,12 +157,12 @@ public class ResearchService {
         dto.setStatus(r.getStatus());
         dto.setPid(r.getPid());
         dto.setTitle(r.getTitle());
-        dto.setPaperType(r.getPaperType());
+        // Type mapping removed as it's now internal to Publication
         dto.setAuthorPlace(r.getAuthorPlace());
         dto.setAuthors(r.getAuthors().stream().map(this::convertToAuthorDTO).collect(Collectors.toList()));
-        dto.setPublisherName(r.getPublisherName());
-        dto.setPublisherYear(r.getPublisherYear());
-        dto.setJournalQuartile(r.getJournalQuartile());
+        if (r.getPublication() != null) {
+            dto.setPublication(convertToPublicationDTO(r.getPublication()));
+        }
         dto.setPaperUrl(r.getPaperUrl());
         dto.setOverleafUrl(r.getOverleafUrl());
         dto.setDriveUrl(r.getDriveUrl());
@@ -168,6 +174,20 @@ public class ResearchService {
         dto.setSubmissionDate(r.getSubmissionDate());
         dto.setDecisionDate(r.getDecisionDate());
         dto.setPublicationDate(r.getPublicationDate());
+        return dto;
+    }
+
+    private PublicationDTO convertToPublicationDTO(Publication p) {
+        PublicationDTO dto = new PublicationDTO();
+        dto.setId(p.getId());
+        dto.setType(p.getType());
+        dto.setName(p.getName());
+        dto.setPublisher(p.getPublisher());
+        dto.setYear(p.getYear());
+        dto.setVenue(p.getVenue());
+        dto.setImpactFactor(p.getImpactFactor());
+        dto.setQuartile(p.getQuartile());
+        dto.setUrl(p.getUrl());
         return dto;
     }
 
@@ -214,14 +234,14 @@ public class ResearchService {
         r.setStatus(dto.getStatus());
         r.setPid(dto.getPid());
         r.setTitle(dto.getTitle());
-        r.setPaperType(dto.getPaperType());
+        // Type mapping removed as it's now internal to Publication
         r.setAuthorPlace(dto.getAuthorPlace());
         if (dto.getAuthors() != null) {
             r.setAuthors(dto.getAuthors().stream().map(this::convertToAuthorEntity).collect(Collectors.toList()));
         }
-        r.setPublisherName(dto.getPublisherName());
-        r.setPublisherYear(dto.getPublisherYear());
-        r.setJournalQuartile(dto.getJournalQuartile());
+        if (dto.getPublication() != null) {
+            r.setPublication(convertToPublicationEntity(dto.getPublication()));
+        }
         r.setPaperUrl(dto.getPaperUrl());
         r.setOverleafUrl(dto.getOverleafUrl());
         r.setDriveUrl(dto.getDriveUrl());
@@ -234,6 +254,20 @@ public class ResearchService {
         r.setDecisionDate(dto.getDecisionDate());
         r.setPublicationDate(dto.getPublicationDate());
         return r;
+    }
+
+    private Publication convertToPublicationEntity(PublicationDTO dto) {
+        Publication p = new Publication();
+        p.setId(dto.getId());
+        p.setType(dto.getType());
+        p.setName(dto.getName());
+        p.setPublisher(dto.getPublisher());
+        p.setYear(dto.getYear());
+        p.setVenue(dto.getVenue());
+        p.setImpactFactor(dto.getImpactFactor());
+        p.setQuartile(dto.getQuartile());
+        p.setUrl(dto.getUrl());
+        return p;
     }
 
     private Author convertToAuthorEntity(AuthorDTO dto) {

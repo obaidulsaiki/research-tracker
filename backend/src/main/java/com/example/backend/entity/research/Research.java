@@ -23,9 +23,6 @@ public class Research {
     private int pid;
     private String title;
 
-    @Enumerated(EnumType.STRING)
-    private PaperType paperType;
-
     private int authorPlace;
 
     @OneToMany(mappedBy = "research", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
@@ -36,11 +33,9 @@ public class Research {
     @JsonIgnore
     private List<HistoryEntry> historyEntries = new ArrayList<>();
 
-    private String publisherName;
-    private String publisherYear;
-
-    @Enumerated(EnumType.STRING)
-    private JournalQuartile journalQuartile;
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "publication_id", referencedColumnName = "id")
+    private Publication publication;
 
     @URL
     private String paperUrl;

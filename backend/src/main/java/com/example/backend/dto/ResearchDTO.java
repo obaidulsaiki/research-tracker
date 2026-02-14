@@ -1,8 +1,6 @@
 package com.example.backend.dto;
 
 import com.example.backend.entity.research.Status;
-import com.example.backend.entity.research.PaperType;
-import com.example.backend.entity.research.JournalQuartile;
 import com.example.backend.entity.research.PublicVisibility;
 import lombok.Data;
 
@@ -16,12 +14,9 @@ public class ResearchDTO {
     private Status status;
     private int pid;
     private String title;
-    private PaperType paperType;
     private int authorPlace;
     private List<AuthorDTO> authors = new ArrayList<>();
-    private String publisherName;
-    private String publisherYear;
-    private JournalQuartile journalQuartile;
+    private PublicationDTO publication;
     private String paperUrl;
     private String overleafUrl;
     private String driveUrl;

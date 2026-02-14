@@ -23,7 +23,6 @@ import { ResearchService, Research, Author } from '../../services/research.servi
           <button [class.active]="tab() === 'dates'" (click)="tab.set('dates')">Timeline</button>
         </div>
 
-        <!-- DEBUG BLOCK: REMOVE AFTER FIX -->
         <form (submit)="onSubmit($event)" class="modal-body">
           <div *ngIf="tab() === 'basic'" class="tab-pane">
             <div class="field-row">
@@ -41,7 +40,6 @@ import { ResearchService, Research, Author } from '../../services/research.servi
                 <label>Status</label>
                 <select [(ngModel)]="paper.status" name="status" class="input-field">
                   <option value="WORKING">Working</option>
-                  <option value="SUBMITTED">Submitted</option>
                   <option value="RUNNING">Running</option>
                   <option value="HYPOTHESIS">Hypothesis</option>
                   <option value="ACCEPTED">Accepted</option>
@@ -50,17 +48,20 @@ import { ResearchService, Research, Author } from '../../services/research.servi
                 </select>
               </div>
               <div class="field-group">
-                <label>Type</label>
-                <select [(ngModel)]="paper.paperType" name="paperType" class="input-field">
-                  <option value="JOURNAL">Journal</option>
-                  <option value="CONFERENCE">Conference</option>
-                  <option value="ARTICLE">Article</option>
-                  <option value="REVIEW">Review</option>
-                  <option value="BOOK_CHAPTER">Book Chapter</option>
-                  <option value="PREPRINT">Preprint</option>
-                  <option value="POSTER">Poster</option>
-                  <option value="THESIS">Thesis</option>
-                  <option value="HYPOTHESIS">Hypothesis</option>
+                <label>Publication Type</label>
+                <select [(ngModel)]="paper.publication!.type" name="pubType" class="input-field">
+                  <option value="JOURNAL">JOURNAL</option>
+                  <option value="CONFERENCE">CONFERENCE</option>
+                  <option value="ARTICLE">ARTICLE</option>
+                  <option value="REVIEW">REVIEW</option>
+                  <option value="BOOK_CHAPTER">BOOK_CHAPTER</option>
+                  <option value="PREPRINT">PREPRINT</option>
+                  <option value="POSTER">POSTER</option>
+                  <option value="THESIS">THESIS</option>
+                  <option value="HYPOTHESIS">HYPOTHESIS</option>
+                  <option [value]="paper.publication!.type" *ngIf="paper.publication!.type && !['JOURNAL','CONFERENCE','ARTICLE','REVIEW','BOOK_CHAPTER','PREPRINT','POSTER','THESIS','HYPOTHESIS'].includes(paper.publication!.type)">
+                    {{ paper.publication!.type }} (Unrecognized)
+                  </option>
                 </select>
               </div>
             </div>
@@ -72,26 +73,42 @@ import { ResearchService, Research, Author } from '../../services/research.servi
 
           <div *ngIf="tab() === 'pub'" class="tab-pane">
             <div class="field-group">
-              <label>Publisher/Journal Name</label>
-              <input type="text" [(ngModel)]="paper.publisherName" name="pubName" class="input-field" placeholder="Name of Journal/Publisher" (input)="onJournalNameChange()">
+              <label>Publication Name (Journal/Conference)</label>
+              <input type="text" [(ngModel)]="paper.publication!.name" name="pubName" class="input-field" placeholder="e.g. Nature, ICC, EuroS&P...">
             </div>
-            <div class="field-row">
+            <div class="field-group">
+              <label>Publisher Name</label>
+              <input type="text" [(ngModel)]="paper.publication!.publisher" name="pubPublisher" class="input-field" placeholder="e.g. IEEE, Springer...">
+            </div>
+            <div class="field-row triple">
               <div class="field-group">
                 <label>Year</label>
-                <input type="text" [(ngModel)]="paper.publisherYear" name="pubYear" class="input-field" placeholder="202X">
+                <input type="text" [(ngModel)]="paper.publication!.year" name="pubYear" class="input-field" placeholder="202X">
+              </div>
+              <div class="field-group">
+                <label>Impact Factor</label>
+                <input type="number" step="0.001" [(ngModel)]="paper.publication!.impactFactor" name="pubImpact" class="input-field" placeholder="0.000" [disabled]="isQuartileDisabled()">
               </div>
               <div class="field-group">
                 <label>Journal Quartile</label>
-                <select [(ngModel)]="paper.journalQuartile" name="journalQuartile" class="input-field" [disabled]="isQuartileDisabled()">
+                <select [(ngModel)]="paper.publication!.quartile" name="pubQuartile" class="input-field" [disabled]="isQuartileDisabled()">
+                  <option value="N/A">N/A</option>
                   <option value="Q1">Q1</option>
                   <option value="Q2">Q2</option>
                   <option value="Q3">Q3</option>
                   <option value="Q4">Q4</option>
-                  <option value="PREDATORY">Predatory</option>
-                  <option value="NON_INDEXED">Non-Indexed</option>
-                  <option value="NONE">None</option>
+                  <option value="NON-PREDATORY">NON-PREDATORY</option>
+                  <option value="NON INDEXED">NON INDEXED</option>
                 </select>
               </div>
+            </div>
+            <div class="field-group">
+              <label>Venue (City, Country or Virtual)</label>
+              <input type="text" [(ngModel)]="paper.publication!.venue" name="pubVenue" class="input-field" placeholder="Location if applicable">
+            </div>
+            <div class="field-group">
+              <label>Direct Publication Link</label>
+              <input type="url" [(ngModel)]="paper.publication!.url" name="pubUrl" class="input-field" placeholder="https://doi.org/...">
             </div>
           </div>
 
@@ -203,10 +220,10 @@ import { ResearchService, Research, Author } from '../../services/research.servi
       cursor: pointer; border-radius: 10px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .modal-tabs button.active { 
-      background: white; color: var(--accent-primary); 
+      background: white; color: var(--p-accent); 
       box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), inset 0 0 0 1px hsla(210, 100%, 50%, 0.1); 
     }
-    .modal-tabs button:hover:not(.active) { color: var(--text-main); background: hsla(210, 40%, 96%, 1); }
+    .modal-tabs button:hover:not(.active) { color: var(--p-text); background: var(--p-bg-subtle); }
 
     .modal-body { padding: 1.5rem 2.25rem; }
     .tab-pane { display: flex; flex-direction: column; gap: 1.25rem; min-height: 300px; }
@@ -221,14 +238,14 @@ import { ResearchService, Research, Author } from '../../services/research.servi
     .field-group.full { grid-column: span 2; }
     
     .input-field {
-      width: 100%; padding: 0.75rem 1rem; background: var(--bg-main); 
-      border: 1px solid var(--border-glass); border-radius: var(--radius-md);
-      font-family: inherit; font-size: 0.875rem; color: var(--text-main); 
+      width: 100%; padding: 0.75rem 1rem; background: var(--p-bg); 
+      border: 1px solid var(--p-border); border-radius: var(--p-radius-sm);
+      font-family: inherit; font-size: 0.875rem; color: var(--p-text); 
       transition: all 0.15s ease;
     }
     .input-field:focus { 
-      background: white; border-color: var(--accent-primary); 
-      box-shadow: 0 0 0 4px hsla(210, 100%, 50%, 0.1); 
+      background: white; border-color: var(--p-accent); 
+      box-shadow: 0 0 0 4px var(--p-accent-glow); 
     }
 
     .author-stack { display: flex; flex-direction: column; gap: 0.5rem; max-height: 240px; overflow-y: auto; padding-right: 0.4rem; }
@@ -239,7 +256,7 @@ import { ResearchService, Research, Author } from '../../services/research.servi
     }
     .author-item:hover { border-color: var(--border-glass); background: white; }
     .author-idx { 
-      font-size: 0.6875rem; font-weight: 800; background: var(--accent-gradient); 
+      font-size: 0.6875rem; font-weight: 800; background: var(--p-gradient); 
       color: white; width: 24px; height: 24px; border-radius: 7px; 
       display: grid; place-items: center; flex-shrink: 0;
     }
@@ -274,6 +291,14 @@ import { ResearchService, Research, Author } from '../../services/research.servi
       cursor: pointer; padding: 0.75rem 1.5rem; transition: color 0.2s; 
     }
     .btn-cancel:hover { color: var(--text-main); }
+
+    .btn-primary { 
+      background: var(--p-accent); color: white; border: none; 
+      padding: 0.8rem 2.5rem; border-radius: 14px; font-weight: 800; 
+      cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 20px -4px var(--p-accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 28px -4px var(--p-accent-glow); }
   `]
 })
 export class AddPaperModalComponent implements OnInit, OnChanges {
@@ -284,21 +309,65 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
   paper: Research = this.getEmptyPaper();
 
   @Input() set editData(data: Research | undefined) {
-    console.log('MODAL[editData] setter called with:', data);
     if (data && Object.keys(data).length > 0) {
-      console.log('MODAL[editData] Setting paper from data...');
       this.paper = JSON.parse(JSON.stringify(data));
-      if (!this.paper.authors) this.paper.authors = [];
+      if (!this.paper.authors) {
+        this.paper.authors = [];
+      } else {
+        // Ensure authors have sequential order if missing or zero
+        this.paper.authors.forEach((a: Author, idx: number) => {
+          if (!a.contributionPercentage || a.contributionPercentage === 0) {
+            a.contributionPercentage = idx + 1;
+          }
+        });
+      }
+
+      if (!this.paper.publication) {
+        this.paper.publication = this.getEmptyPaper().publication;
+      } else {
+        // Normalize type using keyword mapping
+        this.paper.publication.type = this.mapPaperType(this.paper.publication.type);
+        if (!this.paper.publication.quartile) this.paper.publication.quartile = 'N/A';
+      }
     } else {
-      console.log('MODAL[editData] Clearing paper (no data)');
       this.paper = this.getEmptyPaper();
     }
   }
 
+  private mapPaperType(val: any): string {
+    const v = String(val || '').toUpperCase().trim();
+    if (v === 'CONFERENCE' || v === 'CONFERENCE PROCEEDING') return 'CONFERENCE';
+    if (v === 'JOURNAL' || v === 'JOURNAL PUBLICATION') return 'JOURNAL';
+    if (v === 'ARTICLE' || v === 'GENERAL ARTICLE') return 'ARTICLE';
+
+    if (v.includes('CONFERENCE')) return 'CONFERENCE';
+    if (v.includes('JOURNAL')) return 'JOURNAL';
+    if (v.includes('ARTICLE')) return 'ARTICLE';
+    if (v.includes('REVIEW')) return 'REVIEW';
+    if (v.includes('BOOK')) return 'BOOK_CHAPTER';
+    if (v.includes('PREPRINT')) return 'PREPRINT';
+    if (v.includes('POSTER')) return 'POSTER';
+    if (v.includes('THESIS') || v.includes('DISSERTATION')) return 'THESIS';
+    if (v.includes('HYPOTHESIS')) return 'HYPOTHESIS';
+
+    const valid = ['JOURNAL', 'CONFERENCE', 'ARTICLE', 'REVIEW', 'BOOK_CHAPTER', 'PREPRINT', 'POSTER', 'THESIS', 'HYPOTHESIS'];
+    return valid.includes(v) ? v : 'ARTICLE';
+  }
+
   getEmptyPaper(): Research {
     return {
-      title: '', status: 'WORKING', pid: 0, paperType: 'JOURNAL', authorPlace: 1, authors: [],
-      publisherName: '', publisherYear: '', journalQuartile: 'NONE', publicVisibility: 'PRIVATE',
+      title: '', status: 'WORKING', pid: 0, authorPlace: 1, authors: [],
+      publication: {
+        type: 'JOURNAL',
+        name: '',
+        publisher: '',
+        year: '',
+        venue: '',
+        impactFactor: '',
+        quartile: 'N/A',
+        url: ''
+      },
+      publicVisibility: 'PRIVATE',
       overleafUrl: '', paperUrl: '', driveUrl: '', datasetUrl: '',
       tags: [], featured: false, notes: ''
     };
@@ -313,26 +382,19 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['editData']) {
-      const val = changes['editData'].currentValue;
-      console.log('MODAL[ngOnChanges] editData changed to:', val);
-      if (val && Object.keys(val).length > 0) {
-        this.paper = JSON.parse(JSON.stringify(val));
-        if (!this.paper.authors) this.paper.authors = [];
-      }
-    }
+    // Logic handled by editData setter to stay unified
   }
 
   isPidDisabled() {
-    return ['JOURNAL', 'REVIEW', 'BOOK_CHAPTER', 'PREPRINT', 'POSTER', 'THESIS', 'HYPOTHESIS'].includes(this.paper.paperType);
+    return ['JOURNAL', 'REVIEW', 'BOOK_CHAPTER', 'PREPRINT', 'POSTER', 'THESIS', 'HYPOTHESIS'].includes(this.paper.publication!.type);
   }
 
   isQuartileDisabled() {
-    return this.paper.paperType === 'CONFERENCE';
+    return this.paper.publication!.type === 'CONFERENCE';
   }
 
   onJournalNameChange() {
-    const name = this.paper.publisherName.toLowerCase();
+    const name = (this.paper.publication!.name || '').toLowerCase();
     const journalMap: Record<string, string> = {
       'discover computing': 'Q2',
       'i-st computer science': 'Q2',
@@ -346,7 +408,7 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
 
     for (const [key, value] of Object.entries(journalMap)) {
       if (name.includes(key)) {
-        this.paper.journalQuartile = value as any;
+        this.paper.publication!.quartile = value;
         break;
       }
     }
@@ -385,7 +447,9 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
   }
 
   onSubmit(event: Event) {
-    if (this.isQuartileDisabled()) this.paper.journalQuartile = 'NONE' as any;
+    if (this.isQuartileDisabled() && !this.paper.publication!.impactFactor) {
+      this.paper.publication!.impactFactor = 'NONE';
+    }
     event.preventDefault();
     this.researchService.save(this.paper).subscribe(() => this.close.emit());
   }

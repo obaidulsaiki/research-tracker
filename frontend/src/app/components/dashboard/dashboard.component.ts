@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ResearchService, Research, Author } from '../../services/research.service';
+import { ResearchService, Research, Author, Publication } from '../../services/research.service';
 import readXlsxFile from 'read-excel-file';
 import { AddPaperModalComponent } from '../add-paper-modal/add-paper-modal.component';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
@@ -45,17 +45,23 @@ export class DashboardComponent implements OnInit {
   showBulkConfirm = signal(false);
 
   availableTypes = computed(() => {
-    const types = this.researchItems().map(i => i.paperType).filter(Boolean);
+    const types = (this.researchItems()
+      .map(i => i.publication?.type?.toUpperCase().trim())
+      .filter(t => !!t && t !== '---' && t !== '-' && t !== '_' && t !== 'UNKNOWN') as string[]);
     return [...new Set(types)].sort();
   });
 
   availableYears = computed(() => {
-    const years = this.researchItems().map(i => i.publisherYear).filter(Boolean);
+    const years = (this.researchItems()
+      .map(i => i.publication?.year?.trim())
+      .filter(y => !!y && /^\d{4}$/.test(y)) as string[]);
     return [...new Set(years)].sort((a, b) => b.localeCompare(a));
   });
 
   availablePublishers = computed(() => {
-    const pubs = this.researchItems().map(i => i.publisherName).filter(Boolean);
+    const pubs = (this.researchItems()
+      .map(i => i.publication?.name?.toUpperCase().trim())
+      .filter(p => !!p && p !== '---' && p !== '-' && p !== '_' && p !== 'UNKNOWN') as string[]);
     return [...new Set(pubs)].sort();
   });
 
@@ -177,7 +183,6 @@ export class DashboardComponent implements OnInit {
     const dist = this.statusDistribution();
     return [
       { label: 'Working', value: dist['WORKING'] || 0 },
-      { label: 'Submitted', value: dist['SUBMITTED'] || 0 },
       { label: 'Running', value: dist['RUNNING'] || 0 },
       { label: 'Hypothesis', value: dist['HYPOTHESIS'] || 0 },
       { label: 'Accepted', value: dist['ACCEPTED'] || 0 },
@@ -213,7 +218,7 @@ export class DashboardComponent implements OnInit {
     // Pre-initialize with common types from mockup
     const dist: Record<string, number> = { 'JOURNAL': 0, 'CONFERENCE': 0, 'REVIEW': 0 };
     items.forEach(i => {
-      const t = i.paperType || 'Unknown';
+      const t = (i.publication?.type || 'Unknown').toUpperCase().trim();
       dist[t] = (dist[t] || 0) + 1;
     });
     return dist;
@@ -223,7 +228,7 @@ export class DashboardComponent implements OnInit {
     const items = this.researchItems();
     // Pre-initialize with ALL standard statuses for completeness as requested
     const dist: Record<string, number> = {
-      'WORKING': 0, 'SUBMITTED': 0, 'RUNNING': 0, 'HYPOTHESIS': 0,
+      'WORKING': 0, 'RUNNING': 0, 'HYPOTHESIS': 0,
       'ACCEPTED': 0, 'PUBLISHED': 0, 'REJECTED': 0, 'WITHDRAWN': 0
     };
     items.forEach(i => {
@@ -237,11 +242,11 @@ export class DashboardComponent implements OnInit {
 
   positionDistribution = computed(() => {
     const items = this.researchItems();
-    // Pre-initialize with 1st through 4th as per mockup
-    const dist: Record<string, number> = { '1st': 0, '2nd': 0, '3rd': 0, '4th': 0 };
+    // Pre-initialize with numerical keys for consistency
+    const dist: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0 };
     items.forEach(i => {
       if (i.authorPlace) {
-        const p = `${i.authorPlace}${this.getOrdinal(i.authorPlace)}`;
+        const p = String(i.authorPlace);
         dist[p] = (dist[p] || 0) + 1;
       }
     });
@@ -250,11 +255,14 @@ export class DashboardComponent implements OnInit {
 
   quartileDistribution = computed(() => {
     const items = this.researchItems();
-    const dist: Record<string, number> = { 'Q1': 0, 'Q2': 0, 'Q3': 0, 'Q4': 0 };
+    const dist: Record<string, number> = { 'Q1': 0, 'Q2': 0, 'Q3': 0, 'Q4': 0, 'NON-PREDATORY': 0, 'NON INDEXED': 0 };
     items.forEach(i => {
-      const q = i.journalQuartile;
-      if (q && q !== 'NONE' && q !== 'PREDATORY' && q !== 'NON_INDEXED') {
-        dist[q] = (dist[q] || 0) + 1;
+      const q = i.publication?.quartile;
+      if (q && q !== 'N/A') {
+        const key = q.toUpperCase();
+        if (dist[key] !== undefined) {
+          dist[key] = (dist[key] || 0) + 1;
+        }
       }
     });
     return dist;
@@ -284,19 +292,37 @@ export class DashboardComponent implements OnInit {
       items = items.filter(i => i.status === this.filterStatus());
     }
     if (this.filterType() !== 'all') {
-      items = items.filter(i => i.paperType === this.filterType());
+      items = items.filter(i => (i.publication?.type || '').toUpperCase().trim() === this.filterType());
     }
     if (this.filterYear() !== 'all') {
-      items = items.filter(i => i.publisherYear === this.filterYear());
+      items = items.filter(i => i.publication?.year === this.filterYear());
     }
     if (this.filterPublisher() !== 'all') {
-      items = items.filter(i => i.publisherName === this.filterPublisher());
+      items = items.filter(i => (i.publication?.name || '').toUpperCase().trim() === this.filterPublisher());
     }
     if (this.filterQuartile() !== 'all') {
-      items = items.filter(i => i.journalQuartile === this.filterQuartile());
+      items = items.filter(i => i.publication?.quartile === this.filterQuartile());
     }
 
-    return items;
+    // Default Sorting by Status Weight
+    const statusWeights: Record<string, number> = {
+      'PUBLISHED': 1,
+      'ACCEPTED': 2,
+      'RUNNING': 3,
+      'WORKING': 4,
+      'HYPOTHESIS': 5,
+      'REJECTED': 6,
+      'WITHDRAWN': 7
+    };
+
+    return [...items].sort((a, b) => {
+      const weightA = statusWeights[a.status || ''] || 99;
+      const weightB = statusWeights[b.status || ''] || 99;
+
+      if (weightA !== weightB) return weightA - weightB;
+      // Secondary sort by PID (higher first) within same status
+      return (b.pid || 0) - (a.pid || 0);
+    });
   });
 
   onTabFilterChange(event: { key: string; value: string }) {
@@ -348,19 +374,36 @@ export class DashboardComponent implements OnInit {
   exportToExcel() {
     // No-dependency approach: Generate a specialized CSV that Excel recognizes as a spreadsheet
     let csvContent = '\uFEFF'; // Add BOM for Excel UTF-8 support
-    csvContent += 'No,Status,PID,Title,Type,Authors,Publisher,Year,Quartile\n';
+
+    // Header for 23-column format
+    csvContent += 'No,Status,PID,Title,Type,Publication Name,Publisher,Year,Venue,Impact Factor,Quartile,Direct Link,Authors,Overleaf,Drive,Dataset,Visibility,Featured,Tags,Notes,Submission Date,Decision Date,Publication Date\n';
 
     this.researchItems().forEach((r, index) => {
+      const pub = (r.publication || {}) as any;
       const row = [
         index + 1,
-        `"${r.status || ''}"`,
-        `"${r.pid || ''}"`,
-        `"${(r.title || '').replace(/"/g, '""')}"`,
-        `"${r.paperType || ''}"`,
+        `"${r.status || 'WORKING'}"`,
+        `"${r.pid || '0'}"`,
+        `"${(r.title || 'NONE').replace(/"/g, '""')}"`,
+        `"${pub.type || 'ARTICLE'}"`,
+        `"${(pub.name || 'NONE').replace(/"/g, '""')}"`,
+        `"${(pub.publisher || 'NONE').replace(/"/g, '""')}"`,
+        `"${pub.year || 'NONE'}"`,
+        `"${(pub.venue || 'NONE').replace(/"/g, '""')}"`,
+        `"${pub.impactFactor || '0.0'}"`,
+        `"${pub.quartile || 'N/A'}"`,
+        `"${pub.url || 'NONE'}"`,
         `"${(this.getAuthorList(r) || '').replace(/"/g, '""')}"`,
-        `"${(r.publisherName || '').replace(/"/g, '""')}"`,
-        `"${r.publisherYear || ''}"`,
-        `"${r.journalQuartile || ''}"`
+        `"${(r.overleafUrl || 'NONE').replace(/"/g, '""')}"`,
+        `"${(r.driveUrl || 'NONE').replace(/"/g, '""')}"`,
+        `"${(r.datasetUrl || 'NONE').replace(/"/g, '""')}"`,
+        `"${r.publicVisibility || 'PRIVATE'}"`,
+        `"${r.featured || 'false'}"`,
+        `"${(r.tags ? r.tags.join(', ') : '').replace(/"/g, '""')}"`,
+        `"${(r.notes || '').replace(/"/g, '""')}"`,
+        `"${r.submissionDate || ''}"`,
+        `"${r.decisionDate || ''}"`,
+        `"${r.publicationDate || ''}"`
       ];
       csvContent += row.join(',') + '\n';
     });
@@ -377,14 +420,370 @@ export class DashboardComponent implements OnInit {
   }
 
   exportToPdf() {
-    // Premium Print Approach: Use window.print() on the archive view
-    // This is the most reliable "No-Dependency" way to get a high-quality PDF
-    const originalTab = this.activeTab();
-    this.activeTab.set('archive');
-    setTimeout(() => {
-      window.print();
-      this.activeTab.set(originalTab);
-    }, 500);
+    // PREMIUM PRINT SYSTEM: Generate a dedicated report in a hidden iframe
+    const reportHtml = this.generateReportHtml();
+
+    // Create hidden iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(reportHtml);
+      doc.close();
+
+      // Ensure images/styles are loaded before printing
+      iframe.onload = () => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      };
+    }
+  }
+
+  private generateReportHtml(): string {
+    const items = this.filteredPapers();
+    const date = new Date().toLocaleDateString(undefined, {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const clean = (val: any) => {
+      if (!val || val === '_' || val === '-' || val === '---' || val === 'Unknown' || val === 'N/A') return 'NONE';
+      return val;
+    };
+
+    const stats = {
+      total: items.length,
+      published: items.filter(i => i.status === 'PUBLISHED').length,
+      accepted: items.filter(i => i.status === 'ACCEPTED').length,
+      inProgress: items.filter(i => ['RUNNING', 'WORKING', 'HYPOTHESIS'].includes(i.status || '')).length
+    };
+
+    const getStatusCSS = (status: string = '') => {
+      const s = status.toUpperCase();
+      if (s.includes('PUBLISHED')) return { bg: '#dcfce7', text: '#166534', border: '#bbf7d0', accent: '#22c55e' };
+      if (s.includes('ACCEPTED')) return { bg: '#eff6ff', text: '#1e40af', border: '#dbeafe', accent: '#3b82f6' };
+      if (s.includes('REVIEW') || s.includes('RUNNING') || s.includes('WORKING') || s.includes('HYPOTHESIS'))
+        return { bg: '#fef9c3', text: '#854d0e', border: '#fef08a', accent: '#eab308' };
+      if (s.includes('REJECTED') || s.includes('WITHDRAWN')) return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca', accent: '#ef4444' };
+      return { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0', accent: '#64748b' };
+    };
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          :root {
+            --primary: #4f46e5;
+            --primary-dark: #3730a3;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+          }
+          
+          @page { size: A4 portrait; margin: 15mm; }
+          
+          body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+          }
+
+          .container { max-width: 680px; margin: 0 auto; }
+
+          /* Exhibition Header */
+          .exhibition-header {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 24px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+          }
+
+          .header-accent {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+          }
+
+          .header-content h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            letter-spacing: -1px;
+          }
+
+          .header-subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+          }
+
+          /* Metric Cards */
+          .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+          }
+
+          .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+          }
+
+          .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            display: block;
+          }
+
+          .metric-label {
+            font-size: 11px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            font-weight: 600;
+          }
+
+          /* Research Cards */
+          .research-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            margin-bottom: 24px;
+            padding: 24px;
+            position: relative;
+            display: flex;
+            gap: 24px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            page-break-inside: avoid;
+          }
+
+          .status-sidebar {
+            width: 6px;
+            border-radius: 10px;
+            flex-shrink: 0;
+          }
+
+          .card-main { flex-grow: 1; }
+
+          .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+          }
+
+          .paper-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+            line-height: 1.4;
+            max-width: 80%;
+          }
+
+          .status-badge {
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
+          }
+
+          .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+          }
+
+          .badge-box {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+          }
+
+          .metadata-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 13px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+          }
+
+          .badge-venue { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+          .badge-if { background: #eff6ff; color: #1e40af; border-color: #dbeafe; }
+          .badge-rank { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+
+          .meta-item { display: flex; flex-direction: column; gap: 4px; }
+          .meta-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+          .meta-value { font-size: 13px; font-weight: 600; color: #334155; }
+
+          .authors-section {
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            padding-left: 4px;
+          }
+
+          .authors-section strong { color: #1e293b; }
+
+          .links-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 16px;
+          }
+
+          .clean-link {
+            font-size: 11px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            background: #eef2ff;
+            padding: 4px 10px;
+            border-radius: 6px;
+          }
+
+          .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="exhibition-header">
+            <div class="header-accent"></div>
+            <div class="header-content">
+              <span class="header-subtitle">Academic Research Portfolio</span>
+              <h1>Impact Summary</h1>
+              
+              <div class="metrics-grid">
+                <div class="metric-card">
+                  <span class="metric-value">${stats.total}</span>
+                  <span class="metric-label">Total Projects</span>
+                </div>
+                <div class="metric-card" style="border-left: 3px solid #22c55e;">
+                  <span class="metric-value">${stats.published}</span>
+                  <span class="metric-label">Published</span>
+                </div>
+                <div class="metric-card" style="border-left: 3px solid #3b82f6;">
+                  <span class="metric-value">${stats.accepted}</span>
+                  <span class="metric-label">Accepted</span>
+                </div>
+                <div class="metric-card" style="border-left: 3px solid #eab308;">
+                  <span class="metric-value">${stats.inProgress}</span>
+                  <span class="metric-label">In Progress</span>
+                </div>
+              </div>
+            </div>
+            <div style="position: absolute; bottom: 20px; right: 40px; opacity: 0.6; font-size: 12px;">
+              Generated on ${date}
+            </div>
+          </div>
+
+          ${items.map(r => {
+      const pub = (r.publication || {}) as Publication;
+      const style = getStatusCSS(r.status);
+      return `
+              <div class="research-card">
+                <div class="status-sidebar" style="background: ${style.accent}"></div>
+                <div class="card-main">
+                  <div class="card-header">
+                    <h3 class="paper-title">${r.title}</h3>
+                    <span class="status-badge" style="background: ${style.bg}; color: ${style.text}; border-color: ${style.border}">
+                      ${r.status}
+                    </span>
+                  </div>
+
+                  <div class="authors-section">
+                    <strong>Investigators:</strong> ${this.getAuthorList(r)}
+                  </div>
+
+                  <div class="badge-box">
+                    <span class="metadata-badge badge-venue">
+                      <span style="font-size: 15px;">📍</span> ${clean(pub.name)}
+                    </span>
+                    <span class="metadata-badge badge-if">IF: ${pub.impactFactor || '0.0'}</span>
+                    <span class="metadata-badge badge-rank">RANK: ${clean(pub.quartile)}</span>
+                  </div>
+
+                  <div class="metadata-grid">
+                    <div class="meta-item">
+                      <span class="meta-label">Type</span>
+                      <span class="meta-value">${clean(pub.type)}</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-label">Publisher & Year</span>
+                      <span class="meta-value">${clean(pub.publisher)} (${clean(pub.year)})</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-label">ID / PID</span>
+                      <span class="meta-value">${r.pid}</span>
+                    </div>
+                  </div>
+
+                  <div class="links-row">
+                    ${r.paperUrl ? `<a href="${r.paperUrl}" class="clean-link">Research Link</a>` : ''}
+                    ${r.overleafUrl ? `<a href="${r.overleafUrl}" class="clean-link">Overleaf</a>` : ''}
+                    ${r.driveUrl ? `<a href="${r.driveUrl}" class="clean-link">Drive Repo</a>` : ''}
+                    ${r.datasetUrl ? `<a href="${r.datasetUrl}" class="clean-link">Dataset</a>` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+    }).join('')}
+
+          <div class="footer">
+            Digital Research Archive &copy; ${new Date().getFullYear()} • Intellectual Property of the Investigator
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   }
 
   nextPage() {
@@ -493,7 +892,20 @@ export class DashboardComponent implements OnInit {
 
     const items: Research[] = dataRows.map(row => {
       const getVal = (search: string) => {
-        const idx = headers.findIndex(h => h.includes(search.toLowerCase()));
+        // Try exact match first
+        let idx = headers.findIndex(h => h === search.toLowerCase());
+        if (idx === -1) {
+          // Then try includes, but avoid ambiguous ones like 'year' matching 'publisher \ year'
+          idx = headers.findIndex(h => {
+            const lowH = h.toLowerCase();
+            const lowS = search.toLowerCase();
+            if (lowS === 'year') {
+              return lowH === 'year' || (lowH.endsWith('year') && !lowH.includes('publisher'));
+            }
+            if (lowS === 'publisher') return lowH === 'publisher' || lowH.startsWith('publisher');
+            return lowH.includes(lowS);
+          });
+        }
         return idx !== -1 ? row[idx] : null;
       };
 
@@ -503,17 +915,54 @@ export class DashboardComponent implements OnInit {
         return isNaN(n) ? 0 : n;
       };
 
+      const getGuess = (type: 'year' | 'impact' | 'url' | 'name') => {
+        // Positional guesses for legacy formats
+        if (type === 'name' && !headers.includes('publication') && row.length >= 8) {
+          return row[7]; // Ghost column 7 is often publication name
+        }
+        for (const cell of row) {
+          const s = String(cell || '').trim();
+          if (!s) continue;
+          if (type === 'year' && /^\d{4}$/.test(s)) return s;
+          if (type === 'impact' && /^[Qq][1-4]$/.test(s)) return s.toUpperCase();
+          if (type === 'url' && s.startsWith('http')) return s;
+        }
+        return null;
+      };
+
+      const rawYear = String(getVal('year') || '');
+      const finalYear = /^\d{4}$/.test(rawYear) ? rawYear : (getGuess('year') || '');
+      const finalName = String(getVal('publication') || getVal('journal') || getVal('name') || getGuess('name') || getVal('publisher') || '');
+
       return {
         title: String(getVal('title') || 'Untitled'),
         status: this.mapStatus(String(getVal('status') || '')),
         pid: parseNum(getVal('pid')),
-        paperType: this.mapPaperType(String(getVal('type') || '')),
+        publication: {
+          type: this.mapPaperType(String(getVal('type') || '')),
+          name: finalName,
+          publisher: String(getVal('publisher') || (finalName !== getVal('publisher') ? getVal('publisher') : '') || ''),
+          year: finalYear,
+          venue: String(getVal('place') || getVal('venue') || ''),
+          impactFactor: (() => {
+            const val = String(getVal('impact') || getVal('if') || '0.0');
+            // If it looks like a quartile (Q1, Q2..), don't put it in impactFactor
+            return /^[Qq][1-4]$/.test(val) ? '0.0' : val;
+          })(),
+          quartile: (() => {
+            const q = String(getVal('quartile') || getVal('journal q') || '');
+            if (q && q !== 'null' && q !== 'undefined' && q !== '') return q;
+            const guess = getGuess('impact');
+            if (guess) return guess;
+            const ifVal = String(getVal('impact') || getVal('if') || '');
+            if (/^[Qq][1-4]$/.test(ifVal)) return ifVal.toUpperCase();
+            return 'N/A';
+          })(),
+          url: String(getVal('link') || getVal('online') || getGuess('url') || '')
+        },
         authorPlace: parseNum(getVal('place')),
-        publisherName: String(getVal('publisher') || ''),
-        publisherYear: String(getVal('year') || ''),
-        journalQuartile: String(getVal('quartile') || 'NONE'),
-        overleafUrl: String(getVal('overleaf') || ''),
-        paperUrl: String(getVal('online') || ''),
+        overleafUrl: String(getVal('overleaf') || getVal('overlink') || ''),
+        paperUrl: String(getVal('online') || getVal('article') || ''),
         driveUrl: String(getVal('drive') || getVal('file') || ''),
         datasetUrl: String(getVal('dataset') || ''),
         authors: this.parseAuthors(getVal('authors')),
@@ -533,7 +982,7 @@ export class DashboardComponent implements OnInit {
 
   private mapStatus(val: string): string {
     const s = String(val || '').toUpperCase().trim();
-    const valid = ['WORKING', 'SUBMITTED', 'RUNNING', 'HYPOTHESIS', 'ACCEPTED', 'PUBLISHED', 'REJECTED'];
+    const valid = ['WORKING', 'RUNNING', 'HYPOTHESIS', 'ACCEPTED', 'PUBLISHED', 'REJECTED'];
     return valid.includes(s) ? s : 'WORKING';
   }
 
@@ -626,8 +1075,7 @@ export class DashboardComponent implements OnInit {
       case 'PUBLISHED': return '#10b981';
       case 'ACCEPTED': return '#22c55e';
       case 'WORKING': return '#94a3b8';
-      case 'SUBMITTED': return '#3b82f6';
-      case 'RUNNING': return '#eab308';
+      case 'RUNNING': return '#3b82f6';
       case 'HYPOTHESIS': return '#8b5cf6';
       case 'REJECTED': return '#ef4444';
       default: return '#64748b';

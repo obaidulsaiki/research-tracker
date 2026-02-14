@@ -2,51 +2,54 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
-    selector: 'app-dashboard-sidebar',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
-    <aside class="app-sidebar fade-up">
-      <div class="sidebar-header">
-        <div class="brand-icon">📜</div>
-        <div class="brand-name">Res<b>Track</b></div>
+  selector: 'app-dashboard-sidebar',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <aside class="app-sidebar reveal">
+      <div class="rt-logo-container">
+        <div class="rt-logo-text">Research-Tracker</div>
       </div>
+      
+      <nav class="nav-section">
+        <div class="nav-title">Primary</div>
+        <div class="nav-item" [class.active]="activeTab === 'overview'" (click)="tabChange.emit('overview')">
+          <span class="nav-icon">🏠</span> Dashboard
+        </div>
+        <div class="nav-item" [class.active]="activeTab === 'archive'" (click)="tabChange.emit('archive')">
+          <span class="nav-icon">📚</span> Archive
+        </div>
+      </nav>
 
-      <nav class="sidebar-nav">
-        <div class="nav-label">Core View</div>
-        <button [class.active]="activeTab === 'overview'" (click)="tabChange.emit('overview')">
-          <span>🏠</span> Overview
-        </button>
-        <button [class.active]="activeTab === 'archive'" (click)="tabChange.emit('archive')">
-          <span>📚</span> Paper Archive
-        </button>
-        
-        <div class="nav-label">Insights</div>
-        <button [class.active]="activeTab === 'authors'" (click)="tabChange.emit('authors')">
-          <span>🤝</span> Co-Authors
-        </button>
-        <button [class.active]="activeTab === 'analytics'" (click)="tabChange.emit('analytics')">
-          <span>📈</span> Analytics
-        </button>
-        <button [class.active]="activeTab === 'history'" (click)="tabChange.emit('history')">
-          <span>🕒</span> Audit Log
-        </button>
-        <button [class.active]="activeTab === 'download'" (click)="tabChange.emit('download')">
-          <span>📥</span> Download
-        </button>
+      <nav class="nav-section">
+        <div class="nav-title">Analysis</div>
+        <div class="nav-item" [class.active]="activeTab === 'authors'" (click)="tabChange.emit('authors')">
+          <span class="nav-icon">🤝</span> Authors
+        </div>
+        <div class="nav-item" [class.active]="activeTab === 'analytics'" (click)="tabChange.emit('analytics')">
+          <span class="nav-icon">📈</span> Insights
+        </div>
+        <div class="nav-item" [class.active]="activeTab === 'history'" (click)="tabChange.emit('history')">
+          <span class="nav-icon">🕒</span> Audit
+        </div>
+        <div class="nav-item" [class.active]="activeTab === 'download'" (click)="tabChange.emit('download')">
+          <span class="nav-icon">📤</span> Export
+        </div>
       </nav>
 
       <div class="sidebar-footer">
-        <button class="btn-share" (click)="onViewPortfolio.emit()">🌐 Public Profile</button>
+        <button class="btn-floating-vibrant" (click)="onViewPortfolio.emit()">
+          <span>🌐</span> View Public Profile
+        </button>
       </div>
     </aside>
   `,
-    styles: [`
+  styles: [`
     :host { display: contents; }
   `]
 })
 export class SidebarComponent {
-    @Input() activeTab: string = 'overview';
-    @Output() tabChange = new EventEmitter<string>();
-    @Output() onViewPortfolio = new EventEmitter<void>();
+  @Input() activeTab: string = 'overview';
+  @Output() tabChange = new EventEmitter<string>();
+  @Output() onViewPortfolio = new EventEmitter<void>();
 }

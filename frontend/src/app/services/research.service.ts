@@ -19,18 +19,27 @@ export interface HistoryEntry {
     fieldName?: string;
 }
 
+export interface Publication {
+    id?: number;
+    type: string;
+    name: string;
+    publisher: string;
+    year: string;
+    venue: string;
+    impactFactor: string;
+    quartile: string;
+    url: string;
+}
+
 export interface Research {
     id?: number;
     status: string;
     pid: number;
     title: string;
-    paperType: string;
+    publication: Publication | null; // Replaces flat fields
     authorPlace: number;
     authors: Author[];
-    publisherName: string;
-    publisherYear: string;
-    journalQuartile: string;
-    paperUrl?: string;
+    paperUrl?: string; // This is the direct link that matches backend @URL
     overleafUrl?: string;
     driveUrl?: string;
     datasetUrl?: string;
@@ -60,8 +69,26 @@ export class ResearchService {
         this.loading.set(true);
         this.http.get<Research[]>(this.apiUrl).subscribe({
             next: (items) => {
-                console.log('RESEARCH SERVICE: Loaded items:', items);
-                this.researchItems.set(items);
+                // NORMALIZATION: Split IF/Quartile if they are merged in legacy records
+                const normalized = items.map(item => {
+                    if (item.publication) {
+                        const ifVal = String(item.publication.impactFactor || '').trim();
+                        const qVal = String(item.publication.quartile || '').trim();
+
+                        // If IF field contains a Quartile (Q1, Q2...) and Quartile is empty
+                        if (/^[Qq][1-4]$/.test(ifVal) && (!qVal || qVal === 'N/A' || qVal === '---')) {
+                            item.publication.quartile = ifVal.toUpperCase();
+                            item.publication.impactFactor = '0.0';
+                        }
+
+                        // Default quartile if missing
+                        if (!item.publication.quartile) item.publication.quartile = 'N/A';
+                    }
+                    return item;
+                });
+
+                console.log('RESEARCH SERVICE: Loaded items:', normalized);
+                this.researchItems.set(normalized);
                 this.loading.set(false);
             },
             error: () => this.loading.set(false)

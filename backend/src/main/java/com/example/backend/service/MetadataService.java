@@ -1,6 +1,7 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.AuthorDTO;
+import com.example.backend.dto.PublicationDTO;
 import com.example.backend.dto.ResearchDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,13 +48,16 @@ public class MetadataService {
                     dto.setAuthors(authors);
                 }
 
+                PublicationDTO pub = new PublicationDTO();
+                dto.setPublication(pub);
+
                 // Year
                 if (message.containsKey("created")) {
                     Map<String, Object> created = (Map<String, Object>) message.get("created");
                     if (created.containsKey("date-parts")) {
                         List<List<Integer>> dateParts = (List<List<Integer>>) created.get("date-parts");
                         if (!dateParts.isEmpty() && !dateParts.get(0).isEmpty()) {
-                            dto.setPublisherYear(String.valueOf(dateParts.get(0).get(0)));
+                            pub.setYear(String.valueOf(dateParts.get(0).get(0)));
                         }
                     }
                 }
@@ -62,8 +66,16 @@ public class MetadataService {
                 if (message.containsKey("container-title")) {
                     List<String> journals = (List<String>) message.get("container-title");
                     if (!journals.isEmpty()) {
-                        dto.setPublisherName(journals.get(0));
+                        pub.setName(journals.get(0));
                     }
+                }
+
+                if (message.containsKey("publisher")) {
+                    pub.setPublisher((String) message.get("publisher"));
+                }
+
+                if (message.containsKey("type")) {
+                    pub.setType((String) message.get("type"));
                 }
 
                 dto.setPaperUrl("https://doi.org/" + doi);

@@ -20,12 +20,12 @@ export class PortfolioComponent implements OnInit {
   publicResearches = computed(() =>
     [...this.researchService.researchItems()]
       .filter(i => i.publicVisibility === 'PUBLIC')
-      .sort((a, b) => parseInt(b.publisherYear || '0') - parseInt(a.publisherYear || '0'))
+      .sort((a, b) => parseInt(b.publication?.year || '0') - parseInt(a.publication?.year || '0'))
   );
 
   featured = computed(() => this.publicResearches().filter(i => i.featured));
 
-  q1Count = computed(() => this.publicResearches().filter(i => i.journalQuartile === 'Q1').length);
+  q1Count = computed(() => this.publicResearches().filter(i => i.publication?.quartile === 'Q1').length);
   publishedCount = computed(() => this.publicResearches().filter(i => i.status === 'PUBLISHED').length);
 
   currentYear = new Date().getFullYear();

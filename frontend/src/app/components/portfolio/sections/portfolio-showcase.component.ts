@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { Research } from '../../../services/research.service';
 
 @Component({
-    selector: 'app-portfolio-showcase',
-    standalone: true,
-    imports: [CommonModule],
-    template: `
+  selector: 'app-portfolio-showcase',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
     @if (items.length > 0) {
       <section class="showcase-section">
         <div class="section-header">
@@ -19,11 +19,14 @@ import { Research } from '../../../services/research.service';
             <div class="gem-card slide-up">
               <div class="card-glass"></div>
               <div class="gem-header">
-                <span class="type-pill">{{ item.paperType }}</span>
-                @if (item.journalQuartile && item.journalQuartile !== 'NONE') {
-                  <span class="q-badge" [class]="item.journalQuartile.toLowerCase()">
-                    {{ item.journalQuartile }}
+                <span class="type-pill">{{ item.publication?.type || 'ARTICLE' }}</span>
+                @if (item.publication?.quartile && item.publication!.quartile !== 'N/A') {
+                  <span class="q-badge" [class]="item.publication!.quartile.toLowerCase().replace(' ', '-')">
+                    {{ item.publication!.quartile }}
                   </span>
+                }
+                @if (item.publication?.impactFactor && +item.publication!.impactFactor !== 0) {
+                   <span class="type-pill" style="background: rgba(37, 99, 235, 0.1); color: var(--p-accent);">IF: {{ item.publication!.impactFactor }}</span>
                 }
               </div>
               <h3 class="gem-title">{{ item.title }}</h3>
@@ -33,8 +36,8 @@ import { Research } from '../../../services/research.service';
                 }
               </div>
               <div class="gem-footer">
-                <span class="pub-name">{{ item.publisherName }}</span>
-                <span class="pub-year">{{ item.publisherYear }}</span>
+                <span class="pub-name">{{ item.publication?.name || '---' }}</span>
+                <span class="pub-year">{{ item.publication?.year || '---' }}</span>
               </div>
             </div>
           }
@@ -42,7 +45,7 @@ import { Research } from '../../../services/research.service';
       </section>
     }
   `,
-    styles: [`
+  styles: [`
     :host { display: contents; }
     .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2.5rem; }
     .section-icon { font-size: 2rem; }
@@ -66,6 +69,10 @@ import { Research } from '../../../services/research.service';
     }
     .q-badge.q1 { background: linear-gradient(135deg, #fbbf24, #d97706); color: white; }
     .q-badge.q2 { background: linear-gradient(135deg, #94a3b8, #475569); color: white; }
+    .q-badge.q3 { background: linear-gradient(135deg, #10b981, #047857); color: white; }
+    .q-badge.q4 { background: linear-gradient(135deg, #f43f5e, #be123c); color: white; }
+    .q-badge.non-predatory { background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; }
+    .q-badge.non-indexed { background: linear-gradient(135deg, #64748b, #334155); color: white; }
     .gem-title { font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1.4; margin-bottom: 1.5rem; }
     .gem-authors { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; }
     .author-tag { font-size: 0.875rem; font-weight: 600; color: #64748b; }
@@ -81,5 +88,5 @@ import { Research } from '../../../services/research.service';
   `]
 })
 export class PortfolioShowcaseComponent {
-    @Input() items: Research[] = [];
+  @Input() items: Research[] = [];
 }
