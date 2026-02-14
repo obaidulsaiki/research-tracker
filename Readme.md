@@ -66,7 +66,28 @@ research-tracker/
 
 ---
 
-## 🚀 Getting Started
+## � Project Dependencies
+
+### Backend Ecosystem (Spring Boot)
+- **Spring Boot Starter WebMVC**: Core framework for building RESTful APIs.
+- **Spring Boot Starter Data JPA**: Robust persistence layer with Hibernate support.
+- **PostgreSQL Database Driver**: Seamless integration with PostgreSQL 15+.
+- **Spring Boot Starter Validation**: Enterprise-grade data validation.
+- **Project Lombok**: Reducing boilerplate code for entities and DTOs.
+- **OpenCSV (5.9)**: Advanced engine for high-performance CSV data processing.
+- **Spring Boot DevTools**: Accelerated development with hot-reloading.
+
+### Frontend Ecosystem (Angular)
+- **Angular 21 (Core, Signals)**: The latest reactive frontend architecture.
+- **Angular SSR (Express)**: Server-side rendering for superior performance and SEO.
+- **RxJS (7.8)**: Sophisticated reactive programming for data streams.
+- **read-excel-file**: Specialized library for client-side Excel data ingestion.
+- **Vitest**: Next-generation testing framework for rapid verification.
+- **Plus Jakarta Sans**: Custom typography for premium exhibition aesthetics.
+
+---
+
+## �🚀 Getting Started
 
 ### 1. Database Configuration (PostgreSQL)
 Create a database named `research_tracker` and update the `backend/src/main/resources/application.properties` file:
