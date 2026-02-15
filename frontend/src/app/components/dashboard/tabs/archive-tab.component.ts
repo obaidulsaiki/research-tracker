@@ -1,6 +1,6 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Research, Author } from '../../../services/research.service';
+import { Research, Author, ResearchService } from '../../../services/research.service';
 
 @Component({
   selector: 'app-archive-tab',
@@ -154,7 +154,7 @@ import { Research, Author } from '../../../services/research.service';
           </thead>
           <tbody>
             @for (item of sortedPapers; track item.id; let i = $index) {
-              <tr>
+              <tr [class.success-highlight]="item.id === researchService.lastActionItemId()">
                 <td style="padding-left: 2rem; font-weight: 500; color: var(--p-text-muted);">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
                 <td>
                   <span class="p-badge" [attr.data-status]="item.status" style="border: 1px solid rgba(0,0,0,0.05); padding: 0.5rem 1rem; border-radius: 12px; font-weight: 800;">
@@ -326,9 +326,24 @@ import { Research, Author } from '../../../services/research.service';
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
+    .success-highlight {
+        animation: glow-success 3s ease-in-out;
+    }
+    .success-highlight td {
+        background: rgba(16, 185, 129, 0.05) !important;
+        border-bottom-color: rgba(16, 185, 129, 0.2) !important;
+    }
+    @keyframes glow-success {
+        0% { background: rgba(16, 185, 129, 0); }
+        15% { background: rgba(16, 185, 129, 0.15); box-shadow: inset 0 0 20px rgba(16, 185, 129, 0.1); }
+        30% { background: rgba(16, 185, 129, 0.05); }
+        45% { background: rgba(16, 185, 129, 0.1); }
+        100% { background: rgba(16, 185, 129, 0); }
+    }
   `]
 })
 export class ArchiveTabComponent {
+  public researchService: ResearchService = inject(ResearchService);
   @Input() papers: Research[] = [];
   @Input() totalPapersCount: number = 0;
   @Input() totalFilteredCount: number = 0;

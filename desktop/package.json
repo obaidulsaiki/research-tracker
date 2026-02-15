@@ -45,7 +45,7 @@
     ],
     "win": {
       "target": "portable",
-      "icon": "../frontend/public/favicon.svg"
+      "icon": "../frontend/public/logo.svg"
     }
   }
 }

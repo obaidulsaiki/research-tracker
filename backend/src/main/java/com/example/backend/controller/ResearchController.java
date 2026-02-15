@@ -1,8 +1,11 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.HistoryEntryDTO;
+import com.example.backend.dto.JournalMetadataDTO;
 import com.example.backend.dto.ResearchDTO;
+import com.example.backend.repository.ResearchRepo;
 import com.example.backend.service.CsvService;
+import com.example.backend.service.JournalService;
 import com.example.backend.service.MetadataService;
 import com.example.backend.service.ResearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +26,39 @@ public class ResearchController {
     private ResearchService researchService;
 
     @Autowired
+    private ResearchRepo researchRepo;
+
+    @Autowired
     private CsvService csvService;
 
     @Autowired
     private MetadataService metadataService;
+
+    @Autowired
+    private JournalService journalService;
+
+    @GetMapping("/journal-lookup")
+    public ResponseEntity<JournalMetadataDTO> lookupJournal(@RequestParam String name) {
+        return journalService.lookup(name)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/check-duplicate")
+    public ResponseEntity<Map<String, Boolean>> checkDuplicate(@RequestBody ResearchDTO dto) {
+        String title = dto.getTitle();
+        String pubName = dto.getPublication() != null ? dto.getPublication().getName() : null;
+        String year = dto.getPublication() != null ? dto.getPublication().getYear() : null;
+
+        boolean exists;
+        if (dto.getId() != null) {
+            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYearAndIdNot(title, pubName, year,
+                    dto.getId());
+        } else {
+            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYear(title, pubName, year);
+        }
+        return ResponseEntity.ok(Map.of("exists", exists));
+    }
 
     @GetMapping
     public List<ResearchDTO> getAll() {

@@ -43,6 +43,12 @@ export class DashboardComponent implements OnInit {
   currentPage = signal(1);
   pageSize = signal(20);
   showBulkConfirm = signal(false);
+  successNotification = signal<string | null>(null);
+
+  showSuccess(message: string) {
+    this.successNotification.set(message);
+    setTimeout(() => this.successNotification.set(null), 4000);
+  }
 
   availableTypes = computed(() => {
     const types = (this.researchItems()
@@ -59,10 +65,13 @@ export class DashboardComponent implements OnInit {
   });
 
   availablePublishers = computed(() => {
-    const pubs = (this.researchItems()
-      .map(i => (i.publication?.name || '').trim())
-      .filter(p => !!p && p !== '---' && p !== '-' && p !== '_' && p !== 'UNKNOWN') as string[]);
-    return [...new Set(pubs)].sort();
+    const pubs = this.researchItems()
+      .flatMap(i => [
+        (i.publication?.name || '').trim(),
+        (i.publication?.publisher || '').trim()
+      ])
+      .filter(p => !!p && !['---', '-', '_', 'UNKNOWN'].includes(p.toUpperCase()));
+    return [...new Set(pubs)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   });
 
   private cleanName(name: string): string {
@@ -318,7 +327,11 @@ export class DashboardComponent implements OnInit {
       items = items.filter(i => i.publication?.year === this.filterYear());
     }
     if (this.filterPublisher() !== 'all') {
-      items = items.filter(i => (i.publication?.name || '').toUpperCase().trim() === this.filterPublisher());
+      const filterVal = this.filterPublisher().toUpperCase();
+      items = items.filter(i =>
+        (i.publication?.name || '').toUpperCase().trim() === filterVal ||
+        (i.publication?.publisher || '').toUpperCase().trim() === filterVal
+      );
     }
     if (this.filterQuartile() !== 'all') {
       items = items.filter(i => i.publication?.quartile === this.filterQuartile());
@@ -856,6 +869,11 @@ export class DashboardComponent implements OnInit {
   closeModal() {
     this.showModal.set(false);
     this.itemToEdit.set(undefined);
+
+    // If a record was just saved, show the splashy global toast
+    if (this.researchService.lastActionItemId()) {
+      this.showSuccess('Record synchronized across database and dashboard.');
+    }
   }
 
   deleteItem(id: number) {

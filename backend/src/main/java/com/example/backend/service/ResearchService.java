@@ -46,6 +46,22 @@ public class ResearchService {
 
     @Transactional
     public ResearchDTO save(ResearchDTO dto) {
+        String title = dto.getTitle();
+        String pubName = dto.getPublication() != null ? dto.getPublication().getName() : null;
+        String year = dto.getPublication() != null ? dto.getPublication().getYear() : null;
+
+        boolean exists;
+        if (dto.getId() != null) {
+            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYearAndIdNot(title, pubName, year,
+                    dto.getId());
+        } else {
+            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYear(title, pubName, year);
+        }
+
+        if (exists) {
+            throw new RuntimeException("A record with this Title, Publication, and Year already exists.");
+        }
+
         Research entity = convertToEntity(dto);
         Research old = dto.getId() != null ? researchRepo.findById(dto.getId()).orElse(null) : null;
 

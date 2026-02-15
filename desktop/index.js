@@ -55,7 +55,7 @@ function createWindow() {
         width: 1280,
         height: 800,
         title: "Research-Tracker",
-        icon: path.join(__dirname, '../frontend/public/favicon.svg'),
+        icon: "logo.png",
         show: false, // Don't show until ready
         webPreferences: {
             nodeIntegration: false,

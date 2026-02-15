@@ -50,6 +50,17 @@
                 (onCsv)="exportData()">
             </app-download-tab>
             }
+            @if (successNotification()) {
+            <div class="success-toast">
+                <div class="toast-content">
+                    <span class="toast-icon">✨</span>
+                    <div class="toast-text-group">
+                        <span class="toast-title">Update Successful</span>
+                        <span class="toast-msg">{{ successNotification() }}</span>
+                    </div>
+                </div>
+            </div>
+            }
         </div>
     </main>
 

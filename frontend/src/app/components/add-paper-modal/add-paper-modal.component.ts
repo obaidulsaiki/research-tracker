@@ -24,11 +24,19 @@ import { ResearchService, Research, Author } from '../../services/research.servi
         </div>
 
         <form (submit)="onSubmit($event)" class="modal-body">
+          <div *ngIf="errorMessage()" class="validation-banner">
+             <span>⚠️</span> {{ errorMessage() }}
+          </div>
+          <div *ngIf="successMessage()" class="success-banner">
+             <span>✅</span> {{ successMessage() }}
+          </div>
+
           <div *ngIf="tab() === 'basic'" class="tab-pane">
             <div class="field-row">
               <div class="field-group full">
-                <label>Paper Title</label>
-                <input type="text" [(ngModel)]="paper.title" name="title" required class="input-field" placeholder="Entry title...">
+                <label>Paper Title <span class="required-star">*</span></label>
+                <input type="text" [(ngModel)]="paper.title" (ngModelChange)="onMainDetailsChange()" name="title" required class="input-field" [class.field-error]="!paper.title && showValidation()" placeholder="Entry title...">
+                <div *ngIf="!paper.title && showValidation()" class="error-text">Title is mandatory</div>
               </div>
             </div>
             <div class="field-row triple">
@@ -74,7 +82,15 @@ import { ResearchService, Research, Author } from '../../services/research.servi
           <div *ngIf="tab() === 'pub'" class="tab-pane">
             <div class="field-group">
               <label>Publication Name (Journal/Conference)</label>
-              <input type="text" [(ngModel)]="paper.publication!.name" name="pubName" class="input-field" placeholder="e.g. Nature, ICC, EuroS&P...">
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="text" [(ngModel)]="paper.publication!.name" (ngModelChange)="onJournalNameChange($event); onMainDetailsChange()" name="pubName" class="input-field" placeholder="e.g. Nature, ICC, EuroS&P...">
+                <button type="button" class="btn-glass" (click)="onJournalNameChange(paper.publication!.name)" style="padding: 0.75rem; width: 50px;" title="Lookup Journal Info">🔍</button>
+              </div>
+              <small *ngIf="lookupStatus()" 
+                [style.color]="lookupStatus().includes('✨') || lookupStatus().includes('🤖') ? '#10b981' : '#64748b'"
+                style="display: block; margin-top: 0.25rem; font-weight: 700; font-size: 0.75rem; animation: fade-in 0.3s ease;">
+                {{ lookupStatus() }}
+              </small>
             </div>
             <div class="field-group">
               <label>Publisher Name</label>
@@ -83,7 +99,7 @@ import { ResearchService, Research, Author } from '../../services/research.servi
             <div class="field-row triple">
               <div class="field-group">
                 <label>Year</label>
-                <input type="text" [(ngModel)]="paper.publication!.year" name="pubYear" class="input-field" placeholder="202X">
+                <input type="text" [(ngModel)]="paper.publication!.year" (ngModelChange)="onMainDetailsChange()" name="pubYear" class="input-field" placeholder="202X">
               </div>
               <div class="field-group">
                 <label>Impact Factor</label>
@@ -209,6 +225,36 @@ import { ResearchService, Research, Author } from '../../services/research.servi
     }
     .btn-close:hover { background: white; border-color: #ef4444; color: #ef4444; transform: rotate(90deg); }
 
+    .validation-banner {
+      background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);
+      backdrop-filter: blur(8px); padding: 0.75rem 1.25rem; border-radius: 12px;
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+      color: #b91c1c; font-size: 0.875rem; font-weight: 600;
+      animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .success-banner {
+      background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);
+      backdrop-filter: blur(8px); padding: 0.75rem 1.25rem; border-radius: 12px;
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;
+      color: #065f46; font-size: 0.875rem; font-weight: 600;
+      animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes slide-down {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .field-error { border-color: #ef4444 !important; }
+    .error-text { color: #ef4444; font-size: 0.75rem; font-weight: 700; margin-top: 0.25rem; }
+    .required-star { color: #ef4444; margin-left: 2px; }
+    
+    .btn-glass {
+      background: var(--p-bg-subtle); border: 1px solid var(--p-border);
+      border-radius: 10px; cursor: pointer; transition: all 0.2s;
+      display: grid; place-items: center; font-size: 1.1rem;
+    }
+    .btn-glass:hover { background: white; border-color: var(--p-accent); transform: scale(1.05); }
+
     .modal-tabs { 
       display: flex; gap: 0.25rem; background: var(--bg-main); 
       padding: 0.4rem; margin: 0 2.5rem; margin-top: 1.5rem; 
@@ -302,11 +348,15 @@ import { ResearchService, Research, Author } from '../../services/research.servi
   `]
 })
 export class AddPaperModalComponent implements OnInit, OnChanges {
-  private researchService = inject(ResearchService);
+  public researchService: ResearchService = inject(ResearchService);
   @Output() close = new EventEmitter<void>();
 
   tab = signal('basic');
   paper: Research = this.getEmptyPaper();
+  errorMessage = signal('');
+  successMessage = signal('');
+  showValidation = signal(false);
+  isCheckingDuplicate = signal(false);
 
   @Input() set editData(data: Research | undefined) {
     if (data && Object.keys(data).length > 0) {
@@ -393,25 +443,60 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
     return this.paper.publication!.type === 'CONFERENCE';
   }
 
-  onJournalNameChange() {
-    const name = (this.paper.publication!.name || '').toLowerCase();
-    const journalMap: Record<string, string> = {
-      'discover computing': 'Q2',
-      'i-st computer science': 'Q2',
-      'biomedical materials & devices': 'Q2',
-      'heliyon': 'Q1',
-      'journal of neuroscience methods': 'Q3',
-      'ieee access': 'Q1',
-      'data in brief': 'Q3',
-      'open cell signaling': 'Q4'
-    };
+  private duplicateSub: any;
+  onMainDetailsChange() {
+    this.errorMessage.set('');
+    if (!this.paper.title || this.paper.title.length < 5) return;
 
-    for (const [key, value] of Object.entries(journalMap)) {
-      if (name.includes(key)) {
-        this.paper.publication!.quartile = value;
-        break;
-      }
+    if (this.duplicateSub) this.duplicateSub.unsubscribe();
+
+    this.isCheckingDuplicate.set(true);
+    this.duplicateSub = this.researchService.checkDuplicate(this.paper).subscribe({
+      next: (res) => {
+        if (res.exists) {
+          this.errorMessage.set('⚠️ A research record with this Title, Publication, and Year already exists.');
+        }
+        this.isCheckingDuplicate.set(false);
+      },
+      error: () => this.isCheckingDuplicate.set(false)
+    });
+  }
+
+  lookupStatus = signal('');
+  onJournalNameChange(name: string) {
+    if (!name || name.length < 3) {
+      this.lookupStatus.set('');
+      return;
     }
+
+    this.lookupStatus.set('Searching OpenAlex AI...');
+    console.log('AUTO-FILL: Looking up journal:', name);
+    this.researchService.lookupJournal(name).subscribe({
+      next: (meta) => {
+        if (meta) {
+          console.log('AUTO-FILL: Found metadata:', meta);
+          const prefix = meta.impactFactor !== '0.0' ? '✨ Smart Fill' : '🤖 AI Match';
+          this.lookupStatus.set(`${prefix}: Applied info for ${meta.name}`);
+
+          this.paper.publication!.quartile = meta.quartile || 'N/A';
+          this.paper.publication!.impactFactor = meta.impactFactor || '0.0';
+          this.paper.publication!.publisher = meta.publisher || '';
+          this.paper.publication!.url = meta.url || '';
+
+          if (meta.quartile && meta.quartile !== 'CONFERENCE') {
+            this.paper.publication!.type = 'JOURNAL';
+          } else if (meta.quartile === 'CONFERENCE') {
+            this.paper.publication!.type = 'CONFERENCE';
+          }
+        } else {
+          this.lookupStatus.set('No match found.');
+        }
+      },
+      error: (err) => {
+        console.warn('AUTO-FILL: Error or not found:', name, err);
+        this.lookupStatus.set('⚠️ Lookup failed (check backend)');
+      }
+    });
   }
 
   onBulkAuthorChange(event: any) {
@@ -447,6 +532,20 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
   }
 
   onSubmit(event: Event) {
+    event.preventDefault();
+    this.showValidation.set(true);
+
+    if (!this.paper.title) {
+      this.errorMessage.set('⚠️ Paper Title is mandatory.');
+      this.tab.set('basic');
+      return;
+    }
+
+    if (this.errorMessage() && this.errorMessage().includes('exists')) {
+      alert('Cannot save: Record already exists.');
+      return;
+    }
+
     if (this.isQuartileDisabled() && !this.paper.publication!.impactFactor) {
       this.paper.publication!.impactFactor = 'NONE';
     }
@@ -459,12 +558,25 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
     if (this.paper.pid === null || this.paper.pid === undefined) this.paper.pid = 0;
     if (this.paper.authorPlace === null || this.paper.authorPlace === undefined) this.paper.authorPlace = 1;
 
-    event.preventDefault();
     this.researchService.save(this.paper).subscribe({
-      next: () => this.close.emit(),
+      next: (saved) => {
+        this.successMessage.set('✨ Changes saved to database!');
+        this.researchService.lastActionItemId.set(saved.id || null);
+
+        // Auto-clear highlight after 5s
+        setTimeout(() => this.researchService.lastActionItemId.set(null), 5000);
+
+        // Delay close to show success
+        setTimeout(() => this.close.emit(), 1000);
+      },
       error: (err) => {
         console.error('Failed to save research:', err);
-        alert('Failed to save: ' + (err.error?.message || err.message || 'Unknown error'));
+        const msg = err.error?.message || err.message || 'Unknown error';
+        if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('exists')) {
+          this.errorMessage.set('⚠️ Duplicate detected: Title, Publication, and Year must be unique.');
+        } else {
+          alert('Failed to save: ' + msg);
+        }
       }
     });
   }

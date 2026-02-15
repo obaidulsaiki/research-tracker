@@ -31,6 +31,14 @@ export interface Publication {
     url: string;
 }
 
+export interface JournalMetadata {
+    name: string;
+    publisher: string;
+    impactFactor: string;
+    quartile: string;
+    url: string;
+}
+
 export interface Research {
     id?: number;
     status: string;
@@ -60,10 +68,11 @@ export class ResearchService {
     private apiUrl = 'http://localhost:8080/api/research';
 
     // Signals for state
-    researchItems = signal<Research[]>([]);
-    history = signal<HistoryEntry[]>([]);
-    analytics = signal<any>(null);
-    loading = signal<boolean>(false);
+    public lastActionItemId = signal<number | null>(null);
+    public researchItems = signal<Research[]>([]);
+    public history = signal<HistoryEntry[]>([]);
+    public analytics = signal<any>(null);
+    public loading = signal<boolean>(false);
 
     loadAll(): void {
         this.loading.set(true);
@@ -171,5 +180,13 @@ export class ResearchService {
             a.click();
             window.URL.revokeObjectURL(url);
         });
+    }
+
+    lookupJournal(name: string): Observable<JournalMetadata> {
+        return this.http.get<JournalMetadata>(`${this.apiUrl}/journal-lookup`, { params: { name } });
+    }
+
+    checkDuplicate(paper: Research): Observable<{ exists: boolean }> {
+        return this.http.post<{ exists: boolean }>(`${this.apiUrl}/check-duplicate`, paper);
     }
 }
