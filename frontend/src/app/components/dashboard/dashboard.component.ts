@@ -13,12 +13,13 @@ import { AnalyticsTabComponent } from './tabs/analytics-tab.component';
 import { HistoryTabComponent } from './tabs/history-tab.component';
 import { AuthorsTabComponent } from './tabs/authors-tab.component';
 import { DownloadTabComponent } from './tabs/download-tab.component';
+import { AuthorDetailComponent } from './tabs/author-detail.component';
 // Dynamically handling exports to avoid environment-specific install blocks
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, AddPaperModalComponent, ConfirmModalComponent, SidebarComponent, HeaderComponent, OverviewTabComponent, ArchiveTabComponent, AnalyticsTabComponent, HistoryTabComponent, AuthorsTabComponent, DownloadTabComponent],
+  imports: [CommonModule, AddPaperModalComponent, ConfirmModalComponent, SidebarComponent, HeaderComponent, OverviewTabComponent, ArchiveTabComponent, AnalyticsTabComponent, HistoryTabComponent, AuthorsTabComponent, DownloadTabComponent, AuthorDetailComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -31,6 +32,7 @@ export class DashboardComponent implements OnInit {
   history = this.researchService.history;
 
   activeTab = signal('overview');
+  selectedAuthor = signal<string>('');
   searchTerm = signal('');
   filterStatus = signal('all');
   filterType = signal('all');
@@ -44,10 +46,26 @@ export class DashboardComponent implements OnInit {
   pageSize = signal(20);
   showBulkConfirm = signal(false);
   successNotification = signal<string | null>(null);
+  errorNotification = signal<string | null>(null);
 
   showSuccess(message: string) {
     this.successNotification.set(message);
     setTimeout(() => this.successNotification.set(null), 4000);
+  }
+
+  showError(message: string) {
+    this.errorNotification.set(message);
+    setTimeout(() => this.errorNotification.set(null), 5000);
+  }
+
+  viewAuthor(name: string) {
+    this.selectedAuthor.set(name);
+    this.activeTab.set('author-detail');
+  }
+
+  backToAuthors() {
+    this.selectedAuthor.set('');
+    this.activeTab.set('authors');
   }
 
   availableTypes = computed(() => {
@@ -64,14 +82,52 @@ export class DashboardComponent implements OnInit {
     return [...new Set(years)].sort((a, b) => b.localeCompare(a));
   });
 
+  groupedPublishers = computed(() => {
+    const isValid = (s: string) => {
+      if (!s) return false;
+      const n = s.trim().toUpperCase();
+      if (['---', '-', '–', '—', '_', '.', 'UNKNOWN', 'NONE', 'UNDEFINED', 'NULL', 'N/A'].includes(n)) return false;
+      if (!/[a-zA-Z0-9]/.test(s)) return false;
+      return true;
+    };
+
+    // Use a Map keyed by name to deduplicate and accumulate metadata
+    const journalMap = new Map<string, { name: string; publisher: string }>();
+    const confMap = new Map<string, { name: string; venue: string; year: string }>();
+
+    this.researchItems().forEach(i => {
+      const type = (i.publication?.type || '').toUpperCase().trim();
+      const name = (i.publication?.name || '').trim();
+      const publisher = (i.publication?.publisher || '').trim();
+      const venue = (i.publication?.venue || '').trim();
+      const year = (i.publication?.year || '').trim();
+
+      if (!isValid(name)) return;
+
+      if (type === 'CONFERENCE') {
+        if (!confMap.has(name)) {
+          confMap.set(name, { name, venue: isValid(venue) ? venue : '', year: /^\d{4}$/.test(year) ? year : '' });
+        }
+      } else {
+        if (!journalMap.has(name)) {
+          journalMap.set(name, { name, publisher: isValid(publisher) ? publisher : '' });
+        }
+      }
+    });
+
+    const sortFn = (a: { name: string }, b: { name: string }) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+
+    return {
+      journals: [...journalMap.values()].sort(sortFn),
+      conferences: [...confMap.values()].sort(sortFn)
+    };
+  });
+
   availablePublishers = computed(() => {
-    const pubs = this.researchItems()
-      .flatMap(i => [
-        (i.publication?.name || '').trim(),
-        (i.publication?.publisher || '').trim()
-      ])
-      .filter(p => !!p && !['---', '-', '_', 'UNKNOWN'].includes(p.toUpperCase()));
-    return [...new Set(pubs)].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const j = this.groupedPublishers().journals.map(j => j.name);
+    const c = this.groupedPublishers().conferences.map(c => c.name);
+    return [...new Set([...j, ...c])].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   });
 
   private cleanName(name: string): string {
@@ -390,17 +446,27 @@ export class DashboardComponent implements OnInit {
   }
 
   syncPublicProfile() {
-    const toUpdate = this.researchItems().filter(i =>
-      (i.status === 'ACCEPTED' || i.status === 'PUBLISHED') &&
-      i.publicVisibility !== 'PUBLIC'
-    );
+    const toUpdate = this.researchItems().filter(i => {
+      const status = String(i.status || '').toUpperCase();
+      const visibility = String(i.publicVisibility || '').toUpperCase();
+      return (status === 'ACCEPTED' || status === 'PUBLISHED') && visibility !== 'PUBLIC';
+    });
 
-    if (toUpdate.length === 0) return;
+    if (toUpdate.length === 0) {
+      this.showSuccess('Public profile is already up to date!');
+      return;
+    }
 
     const updated = toUpdate.map(i => ({ ...i, publicVisibility: 'PUBLIC' }));
-    this.researchService.bulkSave(updated).subscribe(() => {
-      // Refresh analytics to show updated public count
-      this.researchService.loadAnalytics();
+    this.researchService.bulkSave(updated).subscribe({
+      next: () => {
+        this.researchService.loadAnalytics();
+        this.showSuccess(`Public profile synchronized! ${updated.length} records updated.`);
+      },
+      error: (err) => {
+        console.error('Sync failed:', err);
+        this.showError('Coordination failed: ' + (err.error?.message || 'Server error during synchronization.'));
+      }
     });
   }
 

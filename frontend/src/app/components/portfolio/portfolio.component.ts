@@ -14,24 +14,34 @@ import { PortfolioTimelineComponent } from './sections/portfolio-timeline.compon
   styleUrls: ['./portfolio.component.css']
 })
 export class PortfolioComponent implements OnInit {
-  private researchService = inject(ResearchService);
+  public researchService = inject(ResearchService);
   private router = inject(Router);
 
   publicResearches = computed(() =>
     [...this.researchService.researchItems()]
-      .filter(i => i.publicVisibility === 'PUBLIC')
+      .filter(i => String(i.publicVisibility || '').toUpperCase() === 'PUBLIC')
       .sort((a, b) => parseInt(b.publication?.year || '0') - parseInt(a.publication?.year || '0'))
   );
 
   featured = computed(() => this.publicResearches().filter(i => i.featured));
 
-  q1Count = computed(() => this.publicResearches().filter(i => i.publication?.quartile === 'Q1').length);
-  publishedCount = computed(() => this.publicResearches().filter(i => i.status === 'PUBLISHED').length);
+  q1Count = computed(() => this.publicResearches().filter(i => i.publication?.quartile?.toUpperCase() === 'Q1').length);
+  publishedCount = computed(() => this.publicResearches().filter(i => i.status?.toUpperCase() === 'PUBLISHED').length);
 
   currentYear = new Date().getFullYear();
 
   ngOnInit() {
+    console.log('PORTFOLIO: OnInit triggered');
     this.researchService.loadAll();
+
+    // Diagnostic check after a short delay
+    setTimeout(() => {
+      console.log('PORTFOLIO DIAGNOSTIC:', {
+        allCount: this.researchService.researchItems().length,
+        publicCount: this.publicResearches().length,
+        items: this.publicResearches()
+      });
+    }, 2000);
   }
 
   goBack() {

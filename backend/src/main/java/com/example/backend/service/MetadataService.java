@@ -16,6 +16,9 @@ public class MetadataService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private JournalService journalService;
+
     @SuppressWarnings("unchecked")
     public ResearchDTO fetchMetadataByDoiAsDTO(String doi) {
         String url = "https://api.crossref.org/works/" + doi;
@@ -76,6 +79,20 @@ public class MetadataService {
 
                 if (message.containsKey("type")) {
                     pub.setType((String) message.get("type"));
+                }
+
+                // IMPROVEMENT: Try to refine journal metadata using curated JournalService
+                if (pub.getName() != null) {
+                    journalService.lookup(pub.getName()).ifPresent(journal -> {
+                        pub.setImpactFactor(journal.getImpactFactor());
+                        pub.setQuartile(journal.getQuartile());
+                        if (pub.getPublisher() == null || pub.getPublisher().equals("Unknown")) {
+                            pub.setPublisher(journal.getPublisher());
+                        }
+                        if (pub.getUrl() == null || pub.getUrl().isEmpty()) {
+                            pub.setUrl(journal.getUrl());
+                        }
+                    });
                 }
 
                 dto.setPaperUrl("https://doi.org/" + doi);

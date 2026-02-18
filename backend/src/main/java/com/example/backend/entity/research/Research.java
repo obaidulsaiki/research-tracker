@@ -37,13 +37,9 @@ public class Research {
     @JoinColumn(name = "publication_id", referencedColumnName = "id")
     private Publication publication;
 
-    @URL
     private String paperUrl;
-    @URL
     private String overleafUrl;
-    @URL
     private String driveUrl;
-    @URL
     private String datasetUrl;
 
     @Enumerated(EnumType.STRING)
@@ -53,6 +49,9 @@ public class Research {
     private List<String> tags = new ArrayList<>();
 
     private boolean featured;
+
+    @Column(columnDefinition = "TEXT")
+    private String abstractText;
 
     private String notes;
 

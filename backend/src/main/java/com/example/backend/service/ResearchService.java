@@ -50,22 +50,30 @@ public class ResearchService {
         String pubName = dto.getPublication() != null ? dto.getPublication().getName() : null;
         String year = dto.getPublication() != null ? dto.getPublication().getYear() : null;
 
-        boolean exists;
         if (dto.getId() != null) {
-            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYearAndIdNot(title, pubName, year,
+            boolean exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYearAndIdNot(title, pubName,
+                    year,
                     dto.getId());
-        } else {
-            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYear(title, pubName, year);
-        }
-
-        if (exists) {
+            if (exists) {
+                throw new RuntimeException("A record with this Title, Publication, and Year already exists.");
+            }
+        } else if (researchRepo.existsByTitleAndPublicationNameAndPublicationYear(title, pubName, year)) {
             throw new RuntimeException("A record with this Title, Publication, and Year already exists.");
         }
 
-        Research entity = convertToEntity(dto);
-        Research old = dto.getId() != null ? researchRepo.findById(dto.getId()).orElse(null) : null;
+        Research entity;
+        Research old = null;
 
-        // Ensure bidirectional relationship is set for database persistence
+        if (dto.getId() != null) {
+            entity = researchRepo.findById(dto.getId())
+                    .orElseThrow(() -> new RuntimeException("Research record not found with ID: " + dto.getId()));
+            old = copyEntityState(entity); // Helper to track changes for history
+            updateEntityFromDTO(entity, dto);
+        } else {
+            entity = convertToEntity(dto);
+        }
+
+        // Ensure bidirectional relationship is set for authors
         if (entity.getAuthors() != null) {
             entity.getAuthors().forEach(a -> a.setResearch(entity));
         }
@@ -73,18 +81,177 @@ public class ResearchService {
         Research saved = researchRepo.save(entity);
 
         if (old != null) {
-            if (old.getStatus() != saved.getStatus()) {
-                logHistory(saved, "STATUS_CHANGE", String.valueOf(old.getStatus()), String.valueOf(saved.getStatus()));
-            }
-            if (old.getPublicVisibility() != saved.getPublicVisibility()) {
-                logHistory(saved, "VISIBILITY_CHANGE", String.valueOf(old.getPublicVisibility()),
-                        String.valueOf(saved.getPublicVisibility()));
-            }
+            logFieldChanges(old, saved);
         } else {
-            logHistory(saved, "CREATED", null, "Initial record created");
+            logHistory(saved, "CREATED", null, saved.getTitle());
         }
 
         return convertToDTO(saved);
+    }
+
+    private Research copyEntityState(Research original) {
+        Research copy = new Research();
+        copy.setStatus(original.getStatus());
+        copy.setPublicVisibility(original.getPublicVisibility());
+        copy.setTitle(original.getTitle());
+        copy.setFeatured(original.isFeatured());
+        copy.setNotes(original.getNotes());
+        copy.setOverleafUrl(original.getOverleafUrl());
+        copy.setDriveUrl(original.getDriveUrl());
+        copy.setDatasetUrl(original.getDatasetUrl());
+        copy.setTags(original.getTags() != null ? new ArrayList<>(original.getTags()) : null);
+        copy.setSubmissionDate(original.getSubmissionDate());
+        copy.setDecisionDate(original.getDecisionDate());
+        copy.setPublicationDate(original.getPublicationDate());
+        if (original.getPublication() != null) {
+            Publication pub = new Publication();
+            pub.setName(original.getPublication().getName());
+            pub.setType(original.getPublication().getType());
+            pub.setYear(original.getPublication().getYear());
+            pub.setQuartile(original.getPublication().getQuartile());
+            pub.setImpactFactor(original.getPublication().getImpactFactor());
+            pub.setPublisher(original.getPublication().getPublisher());
+            pub.setVenue(original.getPublication().getVenue());
+            copy.setPublication(pub);
+        }
+        return copy;
+    }
+
+    private void logFieldChanges(Research old, Research saved) {
+        // Status
+        if (!eq(old.getStatus(), saved.getStatus()))
+            logHistory(saved, "STATUS_CHANGE", str(old.getStatus()), str(saved.getStatus()));
+        // Visibility
+        if (!eq(old.getPublicVisibility(), saved.getPublicVisibility()))
+            logHistory(saved, "VISIBILITY_CHANGE", str(old.getPublicVisibility()), str(saved.getPublicVisibility()));
+        // Title
+        if (!eq(old.getTitle(), saved.getTitle()))
+            logHistory(saved, "TITLE_CHANGE", old.getTitle(), saved.getTitle());
+        // Featured
+        if (old.isFeatured() != saved.isFeatured())
+            logHistory(saved, "FEATURED_CHANGE", String.valueOf(old.isFeatured()), String.valueOf(saved.isFeatured()));
+        // Notes
+        if (!eq(old.getNotes(), saved.getNotes()))
+            logHistory(saved, "NOTES_CHANGE", old.getNotes(), saved.getNotes());
+        // Overleaf URL
+        if (!eq(old.getOverleafUrl(), saved.getOverleafUrl()))
+            logHistory(saved, "OVERLEAF_URL_CHANGE", old.getOverleafUrl(), saved.getOverleafUrl());
+        // Drive URL
+        if (!eq(old.getDriveUrl(), saved.getDriveUrl()))
+            logHistory(saved, "DRIVE_URL_CHANGE", old.getDriveUrl(), saved.getDriveUrl());
+        // Dataset URL
+        if (!eq(old.getDatasetUrl(), saved.getDatasetUrl()))
+            logHistory(saved, "DATASET_URL_CHANGE", old.getDatasetUrl(), saved.getDatasetUrl());
+        // Submission Date
+        if (!eq(old.getSubmissionDate(), saved.getSubmissionDate()))
+            logHistory(saved, "SUBMISSION_DATE_CHANGE", str(old.getSubmissionDate()), str(saved.getSubmissionDate()));
+        // Decision Date
+        if (!eq(old.getDecisionDate(), saved.getDecisionDate()))
+            logHistory(saved, "DECISION_DATE_CHANGE", str(old.getDecisionDate()), str(saved.getDecisionDate()));
+        // Publication Date
+        if (!eq(old.getPublicationDate(), saved.getPublicationDate()))
+            logHistory(saved, "PUBLICATION_DATE_CHANGE", str(old.getPublicationDate()),
+                    str(saved.getPublicationDate()));
+        // Publication fields
+        Publication oldPub = old.getPublication();
+        Publication newPub = saved.getPublication();
+        if (oldPub != null || newPub != null) {
+            String oldName = oldPub != null ? oldPub.getName() : null;
+            String newName = newPub != null ? newPub.getName() : null;
+            if (!eq(oldName, newName))
+                logHistory(saved, "PUBLICATION_NAME_CHANGE", oldName, newName);
+
+            String oldType = oldPub != null ? str(oldPub.getType()) : null;
+            String newType = newPub != null ? str(newPub.getType()) : null;
+            if (!eq(oldType, newType))
+                logHistory(saved, "PUBLICATION_TYPE_CHANGE", oldType, newType);
+
+            String oldYear = oldPub != null ? oldPub.getYear() : null;
+            String newYear = newPub != null ? newPub.getYear() : null;
+            if (!eq(oldYear, newYear))
+                logHistory(saved, "PUBLICATION_YEAR_CHANGE", oldYear, newYear);
+
+            String oldQ = oldPub != null ? str(oldPub.getQuartile()) : null;
+            String newQ = newPub != null ? str(newPub.getQuartile()) : null;
+            if (!eq(oldQ, newQ))
+                logHistory(saved, "QUARTILE_CHANGE", oldQ, newQ);
+
+            String oldIF = oldPub != null ? oldPub.getImpactFactor() : null;
+            String newIF = newPub != null ? newPub.getImpactFactor() : null;
+            if (!eq(oldIF, newIF))
+                logHistory(saved, "IMPACT_FACTOR_CHANGE", oldIF, newIF);
+
+            String oldPub2 = oldPub != null ? oldPub.getPublisher() : null;
+            String newPub2 = newPub != null ? newPub.getPublisher() : null;
+            if (!eq(oldPub2, newPub2))
+                logHistory(saved, "PUBLISHER_CHANGE", oldPub2, newPub2);
+
+            String oldVenue = oldPub != null ? oldPub.getVenue() : null;
+            String newVenue = newPub != null ? newPub.getVenue() : null;
+            if (!eq(oldVenue, newVenue))
+                logHistory(saved, "VENUE_CHANGE", oldVenue, newVenue);
+        }
+    }
+
+    private boolean eq(Object a, Object b) {
+        if (a == null && b == null)
+            return true;
+        if (a == null || b == null)
+            return false;
+        return a.equals(b);
+    }
+
+    private String str(Object o) {
+        return o != null ? o.toString() : null;
+    }
+
+    private void updateEntityFromDTO(Research entity, ResearchDTO dto) {
+        entity.setStatus(dto.getStatus());
+        entity.setPid(dto.getPid());
+        entity.setTitle(dto.getTitle());
+        entity.setAuthorPlace(dto.getAuthorPlace());
+
+        // Update Authors (Complex merge)
+        if (dto.getAuthors() != null) {
+            // Simple replace for now but with orphan removal support
+            entity.getAuthors().clear();
+            entity.getAuthors().addAll(dto.getAuthors().stream()
+                    .map(this::convertToAuthorEntity)
+                    .collect(Collectors.toList()));
+        }
+
+        // Update Publication
+        if (dto.getPublication() != null) {
+            if (entity.getPublication() == null) {
+                entity.setPublication(convertToPublicationEntity(dto.getPublication()));
+            } else {
+                updatePublicationFromDTO(entity.getPublication(), dto.getPublication());
+            }
+        }
+
+        entity.setPaperUrl(dto.getPaperUrl());
+        entity.setOverleafUrl(dto.getOverleafUrl());
+        entity.setDriveUrl(dto.getDriveUrl());
+        entity.setDatasetUrl(dto.getDatasetUrl());
+        entity.setPublicVisibility(dto.getPublicVisibility());
+        entity.setTags(dto.getTags());
+        entity.setFeatured(dto.isFeatured());
+        entity.setAbstractText(dto.getAbstractText());
+        entity.setNotes(dto.getNotes());
+        entity.setSubmissionDate(dto.getSubmissionDate());
+        entity.setDecisionDate(dto.getDecisionDate());
+        entity.setPublicationDate(dto.getPublicationDate());
+    }
+
+    private void updatePublicationFromDTO(Publication entity, PublicationDTO dto) {
+        entity.setType(dto.getType());
+        entity.setName(dto.getName());
+        entity.setPublisher(dto.getPublisher());
+        entity.setYear(dto.getYear());
+        entity.setVenue(dto.getVenue());
+        entity.setImpactFactor(dto.getImpactFactor());
+        entity.setQuartile(dto.getQuartile());
+        entity.setUrl(dto.getUrl());
     }
 
     @Transactional
@@ -95,7 +262,16 @@ public class ResearchService {
     @Transactional
     public void delete(Long id) {
         researchRepo.findById(id).ifPresent(r -> {
-            // Manually clear children to satisfy DB constraints
+            // Log DELETED event BEFORE removing — save directly with null research FK
+            HistoryEntry deletedEntry = new HistoryEntry();
+            deletedEntry.setTimestamp(LocalDateTime.now());
+            deletedEntry.setChangeType("DELETED");
+            deletedEntry.setOldValue(r.getTitle());
+            deletedEntry.setNewValue("Record permanently deleted");
+            deletedEntry.setResearch(null); // Detached — survives the delete
+            historyEntryRepo.save(deletedEntry);
+
+            // Now remove children and the record
             if (r.getAuthors() != null) {
                 authorRepo.deleteAll(r.getAuthors());
                 r.getAuthors().clear();
@@ -186,6 +362,7 @@ public class ResearchService {
         dto.setPublicVisibility(r.getPublicVisibility());
         dto.setTags(r.getTags());
         dto.setFeatured(r.isFeatured());
+        dto.setAbstractText(r.getAbstractText());
         dto.setNotes(r.getNotes());
         dto.setSubmissionDate(r.getSubmissionDate());
         dto.setDecisionDate(r.getDecisionDate());
@@ -228,18 +405,32 @@ public class ResearchService {
             dto.setResearchId(h.getResearch().getId());
         }
 
-        // Derive field name from change type
-        String type = h.getChangeType();
-        if (type != null) {
-            if (type.contains("STATUS"))
-                dto.setFieldName("Status");
-            else if (type.contains("VISIBILITY"))
-                dto.setFieldName("Visibility");
-            else if (type.contains("EDIT"))
-                dto.setFieldName("Content");
-            else
-                dto.setFieldName("Record");
-        }
+        // Derive human-readable field name from change type
+        String type = h.getChangeType() != null ? h.getChangeType() : "";
+        String fieldName = switch (type) {
+            case "STATUS_CHANGE" -> "Status";
+            case "VISIBILITY_CHANGE" -> "Visibility";
+            case "TITLE_CHANGE" -> "Title";
+            case "FEATURED_CHANGE" -> "Featured";
+            case "NOTES_CHANGE" -> "Notes";
+            case "OVERLEAF_URL_CHANGE" -> "Overleaf URL";
+            case "DRIVE_URL_CHANGE" -> "Drive URL";
+            case "DATASET_URL_CHANGE" -> "Dataset URL";
+            case "SUBMISSION_DATE_CHANGE" -> "Submission Date";
+            case "DECISION_DATE_CHANGE" -> "Decision Date";
+            case "PUBLICATION_DATE_CHANGE" -> "Publication Date";
+            case "PUBLICATION_NAME_CHANGE" -> "Publication Name";
+            case "PUBLICATION_TYPE_CHANGE" -> "Publication Type";
+            case "PUBLICATION_YEAR_CHANGE" -> "Publication Year";
+            case "QUARTILE_CHANGE" -> "Quartile";
+            case "IMPACT_FACTOR_CHANGE" -> "Impact Factor";
+            case "PUBLISHER_CHANGE" -> "Publisher";
+            case "VENUE_CHANGE" -> "Venue";
+            case "CREATED" -> "New Record";
+            case "DELETED" -> "Deleted Record";
+            default -> type.replace("_", " ").toLowerCase();
+        };
+        dto.setFieldName(fieldName);
 
         return dto;
     }
@@ -265,6 +456,7 @@ public class ResearchService {
         r.setPublicVisibility(dto.getPublicVisibility());
         r.setTags(dto.getTags());
         r.setFeatured(dto.isFeatured());
+        r.setAbstractText(dto.getAbstractText());
         r.setNotes(dto.getNotes());
         r.setSubmissionDate(dto.getSubmissionDate());
         r.setDecisionDate(dto.getDecisionDate());

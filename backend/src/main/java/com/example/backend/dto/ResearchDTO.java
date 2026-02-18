@@ -2,6 +2,7 @@ package com.example.backend.dto;
 
 import com.example.backend.entity.research.Status;
 import com.example.backend.entity.research.PublicVisibility;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -24,6 +25,10 @@ public class ResearchDTO {
     private PublicVisibility publicVisibility;
     private List<String> tags = new ArrayList<>();
     private boolean featured;
+
+    @JsonProperty("synopsis")
+    private String abstractText;
+
     private String notes;
     private LocalDate submissionDate;
     private LocalDate decisionDate;

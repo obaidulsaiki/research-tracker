@@ -1,14 +1,47 @@
-<div class="public-view animate-fade-in">
+<div class="public-view">
     <app-portfolio-hero [itemCount]="publicResearches().length" [q1Count]="q1Count()"
         [publishedCount]="publishedCount()" (onBack)="goBack()">
     </app-portfolio-hero>
 
+    <!-- DEBUG OVERLAY (Only for testing) -->
+    <div *ngIf="publicResearches().length === 0"
+        style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 1rem; border-radius: 10px; z-index: 9999; font-size: 0.7rem;">
+        Debug: Public items: {{ publicResearches().length }} | Total items: {{ researchService.researchItems().length }}
+    </div>
+
     <div class="container main-content">
+        <!-- IMPACT SUMMARY SECTION -->
+        <section class="impact-stats animate-reveal" style="animation-delay: 0.6s">
+            <div class="stats-grid">
+                <div class="impact-card">
+                    <div class="icon-box">🏆</div>
+                    <div class="impact-val">{{ q1Count() }}</div>
+                    <div class="impact-label">Top Tier Q1 Papers</div>
+                    <p>Highest industry standard publications with significant academic weight.</p>
+                </div>
+                <div class="impact-card">
+                    <div class="icon-box">🌍</div>
+                    <div class="impact-val">{{ publishedCount() }}</div>
+                    <div class="impact-label">Total Published</div>
+                    <p>Works successfully archived and peer-reviewed across international venues.</p>
+                </div>
+                <div class="impact-card">
+                    <div class="icon-box">🔥</div>
+                    <div class="impact-val">4k+</div>
+                    <div class="impact-label">Project Reach</div>
+                    <p>Estimated impact and engagement across our research ecosystem.</p>
+                </div>
+            </div>
+        </section>
+
         <app-portfolio-showcase [items]="featured()"></app-portfolio-showcase>
         <app-portfolio-timeline [items]="publicResearches()"></app-portfolio-timeline>
     </div>
 
     <footer class="public-footer">
-        <p>© {{ currentYear }} • Research Tracking System • Built for Excellence</p>
+        <div class="footer-links">
+            <span class="f-dot"></span> RESEARCH <b>TRACKER</b> • RESEARCH ARCHIVE
+        </div>
+        <p>© {{ currentYear }} • Academic Documentation System • Built with Precision</p>
     </footer>
 </div>

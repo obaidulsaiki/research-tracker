@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -25,7 +25,7 @@ import { CommonModule } from '@angular/common';
                 {{ author.count }} {{ author.count === 1 ? 'Collaboration' : 'Collaborations' }}
               </div>
             </div>
-            <div class="p-badge" style="background: var(--p-bg-alt); color: var(--p-accent);">VIEW</div>
+            <button class="view-btn" (click)="viewAuthor.emit(author.name)">VIEW</button>
           </div>
         } @empty {
           <div style="grid-column: 1 / -1; text-align: center; padding: 5rem;">
@@ -38,8 +38,15 @@ import { CommonModule } from '@angular/common';
   `,
   styles: [`
     :host { display: contents; }
+    .view-btn {
+      padding: 0.35rem 0.85rem; border-radius: 8px; border: 1px solid var(--p-accent);
+      background: var(--p-accent); color: white; font-size: 0.7rem; font-weight: 800;
+      cursor: pointer; letter-spacing: 0.5px; transition: all 0.15s; white-space: nowrap;
+    }
+    .view-btn:hover { background: #1d4ed8; border-color: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
   `]
 })
 export class AuthorsTabComponent {
   @Input() coAuthors: any[] = [];
+  @Output() viewAuthor = new EventEmitter<string>();
 }

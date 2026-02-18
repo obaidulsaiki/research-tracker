@@ -54,6 +54,7 @@ export interface Research {
     publicVisibility: string;
     tags: string[];
     featured: boolean;
+    synopsis?: string;
     notes?: string;
     submissionDate?: string;
     decisionDate?: string;

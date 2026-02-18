@@ -20,7 +20,7 @@ import { ResearchService, Research, Author } from '../../services/research.servi
           <button [class.active]="tab() === 'pub'" (click)="tab.set('pub')">Publication</button>
           <button [class.active]="tab() === 'authors'" (click)="tab.set('authors')">Authors</button>
           <button [class.active]="tab() === 'links'" (click)="tab.set('links')">Links</button>
-          <button [class.active]="tab() === 'dates'" (click)="tab.set('dates')">Timeline</button>
+          <button [class.active]="tab() === 'dates'" (click)="tab.set('dates')">Details</button>
         </div>
 
         <form (submit)="onSubmit($event)" class="modal-body">
@@ -57,7 +57,7 @@ import { ResearchService, Research, Author } from '../../services/research.servi
               </div>
               <div class="field-group">
                 <label>Publication Type</label>
-                <select [(ngModel)]="paper.publication!.type" name="pubType" class="input-field">
+                <select [(ngModel)]="paper.publication!.type" (ngModelChange)="onTypeChange($event)" name="pubType" class="input-field">
                   <option value="JOURNAL">JOURNAL</option>
                   <option value="CONFERENCE">CONFERENCE</option>
                   <option value="ARTICLE">ARTICLE</option>
@@ -103,11 +103,11 @@ import { ResearchService, Research, Author } from '../../services/research.servi
               </div>
               <div class="field-group">
                 <label>Impact Factor</label>
-                <input type="number" step="0.001" [(ngModel)]="paper.publication!.impactFactor" name="pubImpact" class="input-field" placeholder="0.000" [disabled]="isQuartileDisabled()">
+                <input type="number" step="0.001" [(ngModel)]="paper.publication!.impactFactor" name="pubImpact" class="input-field" placeholder="0.000" [disabled]="isMetricDisabled()">
               </div>
               <div class="field-group">
                 <label>Journal Quartile</label>
-                <select [(ngModel)]="paper.publication!.quartile" name="pubQuartile" class="input-field" [disabled]="isQuartileDisabled()">
+                <select [(ngModel)]="paper.publication!.quartile" name="pubQuartile" class="input-field" [disabled]="isMetricDisabled()">
                   <option value="N/A">N/A</option>
                   <option value="Q1">Q1</option>
                   <option value="Q2">Q2</option>
@@ -179,8 +179,12 @@ import { ResearchService, Research, Author } from '../../services/research.servi
                 </div>
              </div>
              <div class="field-group">
-                <label>Technical Notes</label>
-                <textarea [(ngModel)]="paper.notes" name="notes" class="input-field" rows="4" placeholder="Private observations..."></textarea>
+                <label>Research Abstract (Public Snippet)</label>
+                <textarea [(ngModel)]="paper.synopsis" name="abstract" class="input-field" rows="6" placeholder="Brief summary for your public portfolio..."></textarea>
+             </div>
+             <div class="field-group">
+                <label>Technical Notes (Private)</label>
+                <textarea [(ngModel)]="paper.notes" name="notes" class="input-field" rows="4" placeholder="Private internal observations..."></textarea>
              </div>
           </div>
 
@@ -204,36 +208,39 @@ import { ResearchService, Research, Author } from '../../services/research.servi
   styles: [`
     .modal-backdrop { 
       position: fixed; inset: 0; background: hsla(222, 47%, 8%, 0.4); 
-      backdrop-filter: blur(12px) saturate(180%); 
+      backdrop-filter: var(--p-glass); 
       display: flex; align-items: center; justify-content: center; 
       z-index: 3000; padding: 2rem; 
+      animation: backdrop-in 0.4s ease;
     }
+    @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
     .modal-container { 
       width: 100%; max-width: 680px; display: flex; flex-direction: column; overflow: hidden; 
-      background: white; border-radius: 24px; border: 1px solid var(--border-glass);
-      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+      background: var(--p-surface); border-radius: 24px; border: 1px solid var(--p-border);
+      box-shadow: var(--p-shadow-premium);
     }
     .modal-header { 
-      padding: 1.75rem 2.5rem; display: flex; justify-content: space-between; align-items: center; 
-      background: white; border-bottom: 1px solid var(--border-dim);
+      padding: 1.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; 
+      background: var(--p-surface); border-bottom: 1px solid var(--p-bg-subtle);
     }
-    .modal-header h2 { font-size: 1.25rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em; }
+    .modal-header h2 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; color: var(--p-text); letter-spacing: -0.03em; }
     .btn-close { 
-      background: var(--bg-main); border: 1px solid var(--border-glass); 
+      background: var(--p-bg-subtle); border: 1px solid var(--p-border); 
       width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center;
-      cursor: pointer; color: var(--text-dim); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer; color: var(--p-text-muted); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .btn-close:hover { background: white; border-color: #ef4444; color: #ef4444; transform: rotate(90deg); }
+    .btn-close:hover { background: white; border-color: var(--p-error); color: var(--p-error); transform: rotate(90deg); }
 
     .validation-banner {
-      background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);
+      background: var(--p-error-bg); border: 1px solid rgba(239, 68, 68, 0.2);
       backdrop-filter: blur(8px); padding: 0.75rem 1.25rem; border-radius: 12px;
       margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;
       color: #b91c1c; font-size: 0.875rem; font-weight: 600;
       animation: slide-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .success-banner {
-      background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);
+      background: var(--p-success-bg); border: 1px solid rgba(16, 185, 129, 0.2);
       backdrop-filter: blur(8px); padding: 0.75rem 1.25rem; border-radius: 12px;
       margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;
       color: #065f46; font-size: 0.875rem; font-weight: 600;
@@ -244,9 +251,9 @@ import { ResearchService, Research, Author } from '../../services/research.servi
       to { transform: translateY(0); opacity: 1; }
     }
     
-    .field-error { border-color: #ef4444 !important; }
-    .error-text { color: #ef4444; font-size: 0.75rem; font-weight: 700; margin-top: 0.25rem; }
-    .required-star { color: #ef4444; margin-left: 2px; }
+    .field-error { border-color: var(--p-error) !important; }
+    .error-text { color: var(--p-error); font-size: 0.75rem; font-weight: 700; margin-top: 0.25rem; }
+    .required-star { color: var(--p-error); margin-left: 2px; }
     
     .btn-glass {
       background: var(--p-bg-subtle); border: 1px solid var(--p-border);
@@ -256,13 +263,13 @@ import { ResearchService, Research, Author } from '../../services/research.servi
     .btn-glass:hover { background: white; border-color: var(--p-accent); transform: scale(1.05); }
 
     .modal-tabs { 
-      display: flex; gap: 0.25rem; background: var(--bg-main); 
+      display: flex; gap: 0.25rem; background: var(--p-surface-muted); 
       padding: 0.4rem; margin: 0 2.5rem; margin-top: 1.5rem; 
-      border-radius: 14px; border: 1px solid var(--border-dim);
+      border-radius: 14px; border: 1px solid var(--p-bg-subtle);
     }
     .modal-tabs button { 
       flex: 1; padding: 0.625rem; border: none; background: transparent; 
-      font-size: 0.8125rem; font-weight: 700; color: var(--text-dim); 
+      font-size: 0.8125rem; font-weight: 700; color: var(--p-text-muted); 
       cursor: pointer; border-radius: 10px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .modal-tabs button.active { 
@@ -278,7 +285,7 @@ import { ResearchService, Research, Author } from '../../services/research.servi
     .field-row.triple { grid-template-columns: 1fr 1fr 1fr; }
     .field-group { display: flex; flex-direction: column; gap: 0.5rem; }
     .field-group label { 
-      font-size: 0.625rem; font-weight: 800; color: var(--text-muted); 
+      font-size: 0.625rem; font-weight: 800; color: var(--p-text-muted); 
       text-transform: uppercase; letter-spacing: 0.08em; 
     }
     .field-group.full { grid-column: span 2; }
@@ -419,7 +426,7 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
       },
       publicVisibility: 'PRIVATE',
       overleafUrl: '', paperUrl: '', driveUrl: '', datasetUrl: '',
-      tags: [], featured: false, notes: ''
+      tags: [], featured: false, synopsis: '', notes: ''
     };
   }
 
@@ -439,8 +446,16 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
     return ['JOURNAL', 'REVIEW', 'BOOK_CHAPTER', 'PREPRINT', 'POSTER', 'THESIS', 'HYPOTHESIS'].includes(this.paper.publication!.type);
   }
 
-  isQuartileDisabled() {
+  isMetricDisabled() {
     return this.paper.publication!.type === 'CONFERENCE';
+  }
+
+  onTypeChange(newType: string) {
+    if (newType === 'CONFERENCE') {
+      this.paper.publication!.impactFactor = '0.0';
+      this.paper.publication!.quartile = 'N/A';
+    }
+    this.onMainDetailsChange();
   }
 
   private duplicateSub: any;
@@ -546,7 +561,7 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
       return;
     }
 
-    if (this.isQuartileDisabled() && !this.paper.publication!.impactFactor) {
+    if (this.isMetricDisabled() && !this.paper.publication!.impactFactor) {
       this.paper.publication!.impactFactor = 'NONE';
     }
 

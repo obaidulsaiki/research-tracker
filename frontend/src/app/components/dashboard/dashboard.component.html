@@ -23,9 +23,10 @@
                 [filterType]="filterType()" [filterYear]="filterYear()" [filterPublisher]="filterPublisher()"
                 [filterQuartile]="filterQuartile()" [availableTypes]="availableTypes()"
                 [availableYears]="availableYears()" [availablePublishers]="availablePublishers()"
-                (filterChange)="onTabFilterChange($event)" (onPageChange)="currentPage.set($event)"
-                (onEdit)="openEditModal($event)" (onDelete)="deleteItem($event)" (onSyncPublic)="syncPublicProfile()"
-                (onClearFilters)="clearFilters()" (onClearDatabase)="showBulkConfirm.set(true)">
+                [groupedPublishers]="groupedPublishers()" (filterChange)="onTabFilterChange($event)"
+                (onPageChange)="currentPage.set($event)" (onEdit)="openEditModal($event)"
+                (onDelete)="deleteItem($event)" (onSyncPublic)="syncPublicProfile()" (onClearFilters)="clearFilters()"
+                (onClearDatabase)="showBulkConfirm.set(true)">
             </app-archive-tab>
             }
 
@@ -37,12 +38,19 @@
             }
 
             @if (activeTab() === 'history') {
-            <app-history-tab [groupedHistory]="groupedHistory()" [totalEvents]="history().length">
+            <app-history-tab [groupedHistory]="groupedHistory()" [totalEvents]="history().length"
+                [researchItems]="researchItems()">
             </app-history-tab>
             }
 
             @if (activeTab() === 'authors') {
-            <app-authors-tab [coAuthors]="coAuthorStats()"></app-authors-tab>
+            <app-authors-tab [coAuthors]="coAuthorStats()" (viewAuthor)="viewAuthor($event)"></app-authors-tab>
+            }
+
+            @if (activeTab() === 'author-detail') {
+            <app-author-detail [authorName]="selectedAuthor()" [allPapers]="researchItems()" (back)="backToAuthors()"
+                (filterReset)="showSuccess('Filters reset to show all papers')">
+            </app-author-detail>
             }
 
             @if (activeTab() === 'download') {
@@ -57,6 +65,18 @@
                     <div class="toast-text-group">
                         <span class="toast-title">Update Successful</span>
                         <span class="toast-msg">{{ successNotification() }}</span>
+                    </div>
+                </div>
+            </div>
+            }
+
+            @if (errorNotification()) {
+            <div class="error-toast">
+                <div class="toast-content">
+                    <span class="toast-icon">⚠️</span>
+                    <div class="toast-text-group">
+                        <span class="toast-title">Sync Error</span>
+                        <span class="toast-msg">{{ errorNotification() }}</span>
                     </div>
                 </div>
             </div>

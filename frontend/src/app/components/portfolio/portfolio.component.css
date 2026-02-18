@@ -1,70 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
 :host {
-    --p-bg: #0f172a;
-    /* Deep Navy */
-    --p-surface: #1e293b;
-    /* Slate 800 */
-    --p-text: #f1f5f9;
-    /* Slate 100 */
-    --p-muted: #94a3b8;
-    /* Slate 400 */
-    --p-brand: #6366f1;
-    /* Indigo 500 */
-    --p-gold: #f59e0b;
-    /* Amber 500 */
-    --font-heading: 'Merriweather', serif;
-    --font-body: 'Inter', sans-serif;
+    /* PREMIUM LIGHT THEME PALETTE - ALIGNED WITH GLOBAL STYLES.CSS */
+    --p-gold: #d97706;
+    --p-gold-gradient: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+
+    /* OVERRIDES FOR PORTFOLIO SPECIFIC VIEW */
+    --font-heading: var(--font-display);
+    --font-accent: 'Playfair Display', serif;
+    --font-body: var(--font-main);
 }
 
 .public-view {
-    height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    min-height: 100vh;
     background: var(--p-bg);
+    background-image:
+        radial-gradient(circle at top right, var(--p-accent-glow), transparent 60%),
+        radial-gradient(circle at center, rgba(37, 99, 235, 0.01) 0%, transparent 80%);
     color: var(--p-text);
     font-family: var(--font-body);
-    padding-bottom: 4rem;
+    padding-bottom: 6rem;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 0 2rem;
 }
 
 /* SECTIONS */
 .main-content {
-    margin-top: -6rem;
+    margin-top: -8rem;
     position: relative;
     z-index: 10;
 }
 
+/* IMPACT STATS SECTION */
+.impact-stats {
+    margin-bottom: 8rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.impact-card {
+    background: var(--p-surface-card);
+    border: 1px solid var(--p-glass-border);
+    border-radius: 24px;
+    padding: 2.5rem;
+    transition: all 0.4s ease;
+    backdrop-filter: var(--p-blur);
+    text-align: left;
+}
+
+.impact-card:hover {
+    transform: translateY(-8px);
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.icon-box {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.impact-val {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: var(--p-gold-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.impact-label {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--p-text);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+}
+
+.impact-card p {
+    font-size: 0.85rem;
+    color: var(--p-text-muted);
+    line-height: 1.6;
+}
+
 .public-footer {
     text-align: center;
-    margin-top: 6rem;
-    padding-top: 3rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 10rem;
+    padding: 4rem 2rem;
+    border-top: 1px solid var(--p-glass-border);
+    background: linear-gradient(to bottom, transparent, rgba(37, 99, 235, 0.02));
+}
+
+.footer-links {
+    margin-bottom: 1.5rem;
+    font-weight: 800;
+    font-size: 0.75rem;
+    color: var(--p-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    letter-spacing: 0.1em;
+}
+
+.f-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--p-gold);
+    border-radius: 50%;
 }
 
 .public-footer p {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 500;
-    color: var(--p-muted);
-    letter-spacing: 0.02em;
-    font-family: var(--font-body);
+    color: var(--p-text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
-.animate-fade-in {
-    animation: fadeIn 0.8s ease-out;
+/* GLOBAL REVEAL ANIMATIONS */
+.animate-reveal {
+    animation: revealUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes fadeIn {
+@keyframes revealUp {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(40px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+::selection {
+    background: var(--p-brand);
+    color: white;
+}
+
+@media (max-width: 900px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .main-content {
+        margin-top: -4rem;
     }
 }

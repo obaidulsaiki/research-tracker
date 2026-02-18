@@ -21,22 +21,41 @@
   --p-text: #0f172a;
   --p-text-muted: #475569;
 
-  --p-radius: 20px;
-  --p-radius-sm: 10px;
+  --p-radius: 16px;
+  --p-radius-lg: 20px;
+  --p-radius-sm: 8px;
+  --p-radius-full: 9999px;
+
+  /* SURFACE BLOCKS */
+  --p-surface: #ffffff;
+  --p-surface-muted: #f8fafc;
+  --p-surface-glass: rgba(255, 255, 255, 0.7);
+
+  /* STATE COLORS */
+  --p-success: #10b981;
+  --p-success-bg: rgba(16, 185, 129, 0.1);
+  --p-error: #ef4444;
+  --p-error-bg: rgba(239, 68, 68, 0.1);
+  --p-warning: #f59e0b;
+  --p-warning-bg: rgba(245, 158, 11, 0.1);
+  --p-info: #3b82f6;
 
   /* AMBIENT DEPTH SHADOWS */
-  --p-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --p-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
   --p-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.07),
-    0 2px 4px -1px rgba(0, 0, 0, 0.04),
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03),
     inset 0 0 0 1px var(--p-border-bright);
   --p-shadow-lg:
-    0 20px 25px -5px rgba(0, 0, 0, 0.08),
-    0 8px 10px -6px rgba(0, 0, 0, 0.04),
+    0 20px 25px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.03),
     inset 0 0 0 1.5px var(--p-border-bright);
+  --p-shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
 
   --font-main: 'Plus Jakarta Sans', sans-serif;
   --font-display: 'Outfit', sans-serif;
+  --font-heading: var(--font-display);
+  --font-body: var(--font-main);
 }
 
 * {
@@ -53,8 +72,17 @@ body {
     radial-gradient(circle at 0% 0%, rgba(37, 99, 235, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
   color: var(--p-text);
-  overflow: hidden;
+  min-height: 100vh;
+}
+
+/* LAYOUT STRUCTURE */
+.app-shell {
+  display: flex;
   height: 100vh;
+  width: 100vw;
+  position: relative;
+  overflow: hidden;
+  /* Lock scroll for dashboard shell */
 }
 
 /* SEARCH & HEADER FIXES */
@@ -76,12 +104,12 @@ body {
 
 .search-wrapper input {
   width: 100%;
-  padding: 0.8rem 1.25rem 0.8rem 3.25rem;
+  padding: 0.6rem 1rem 0.6rem 2.75rem;
   background: white;
   border: 1.5px solid var(--p-border);
-  border-radius: 14px;
+  border-radius: 12px;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--p-text);
   transition: all 0.3s ease;
@@ -101,7 +129,7 @@ body {
   background: white;
   border: 1px solid var(--p-border);
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 700;
   color: var(--p-text);
   display: inline-flex;
@@ -178,16 +206,14 @@ body {
   display: flex;
   align-items: center;
   padding: 0 0.5rem;
-  margin-bottom: 3.5rem;
-  /* Increased spacing */
+  margin-bottom: 2rem;
 }
 
 .rt-logo-text {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1.5rem;
-  /* Slightly larger and more balanced */
-  letter-spacing: -1px;
+  font-size: 1.25rem;
+  letter-spacing: -0.5px;
   color: var(--p-text);
   white-space: nowrap;
   background: var(--p-gradient);
@@ -212,7 +238,7 @@ body {
 /* FLOATING VIBRANT BUTTON */
 .btn-floating-vibrant {
   width: 100%;
-  padding: 1.25rem;
+  padding: 0.85rem;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
   color: white;
   border: none;
@@ -269,13 +295,13 @@ body {
 }
 
 .app-sidebar {
-  width: 300px;
+  width: 230px;
   background: var(--p-panel);
   backdrop-filter: var(--p-glass);
   border-right: 1px solid var(--p-border);
   display: flex;
   flex-direction: column;
-  padding: 3rem 2rem;
+  padding: 1.5rem 1rem;
   z-index: 100;
   position: relative;
 }
@@ -300,8 +326,8 @@ body {
 }
 
 .app-header {
-  height: 96px;
-  padding: 0 4rem;
+  height: 64px;
+  padding: 0 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -316,7 +342,7 @@ body {
 .app-content {
   flex: 1;
   overflow-y: auto;
-  padding: 4rem;
+  padding: 2rem 1.5rem;
   scroll-behavior: smooth;
 }
 
@@ -343,20 +369,19 @@ body {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.82rem;
-  min-width: 1600px;
-  /* Even wider as requested */
+  font-size: 0.68rem;
+  min-width: 1400px;
 }
 
 .p-table th {
-  text-align: left;
-  padding: 1.75rem 1.5rem;
+  text-align: center;
+  padding: 0.9rem 0.8rem;
   background: #fcfdfe;
   color: var(--p-text-muted);
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  font-size: 0.65rem;
+  letter-spacing: 1.2px;
+  font-size: 0.58rem;
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -365,9 +390,10 @@ body {
 }
 
 .p-table td {
-  padding: 1.6rem 1.5rem;
+  padding: 0.5rem 0.6rem;
   border-bottom: 1px solid var(--p-bg-alt);
   vertical-align: middle;
+  text-align: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--p-text);
   background: white;
@@ -387,14 +413,14 @@ body {
 
 /* BADGES & CHIPS */
 .p-badge {
-  padding: 0.4rem 0.85rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 100px;
-  font-size: 0.68rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.3rem;
   transition: all 0.3s ease;
   border: 1px solid transparent;
 }
@@ -473,14 +499,15 @@ body {
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  padding: 1.15rem 1.5rem;
-  border-radius: 18px;
+  gap: 0.8rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--p-text-muted);
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
   position: relative;
   overflow: hidden;
 }
@@ -515,7 +542,7 @@ body {
   backdrop-filter: var(--p-glass);
   border-radius: var(--p-radius);
   border: 1px solid var(--p-border);
-  padding: 2.5rem;
+  padding: 1.5rem 2rem;
   box-shadow: var(--p-shadow);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
