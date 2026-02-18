@@ -346,12 +346,15 @@ public class JournalService {
         }
 
         private void addJournal(String name, String publisher, String ifFactor, String quartile, String url) {
-                addJournal(name, publisher, ifFactor, quartile, url, true);
+                // Default to 2024 for initial seed data (Assuming current/last complete year)
+                addJournal(name, publisher, ifFactor, quartile, url, 2024, true);
         }
 
-        private void addJournal(String name, String publisher, String ifFactor, String quartile, String url,
+        private void addJournal(String name, String publisher, String ifFactor, String quartile, String url, int year,
                         boolean force) {
-                Optional<JournalMetadata> existing = journalRepo.findByNameIgnoreCase(name);
+                // Try to find specific year entry first
+                Optional<JournalMetadata> existing = journalRepo.findByNameAndYear(name, year);
+
                 if (!existing.isPresent()) {
                         journalRepo.save(JournalMetadata.builder()
                                         .name(name)
@@ -359,11 +362,12 @@ public class JournalService {
                                         .impactFactor(ifFactor)
                                         .quartile(quartile)
                                         .url(url)
+                                        .year(year)
                                         .lastUpdated(java.time.LocalDateTime.now())
                                         .build());
                 } else if (force) {
                         JournalMetadata m = existing.get();
-                        // Update if the values changed or if IF is 0.0/Bad
+                        // Update if the values changed
                         m.setPublisher(publisher);
                         m.setImpactFactor(ifFactor);
                         m.setQuartile(quartile);
@@ -380,8 +384,8 @@ public class JournalService {
                 String search = name.trim();
                 System.out.println("JOURNAL LOOKUP: Request for '" + search + "' (Local DB Only)");
 
-                // Check Database (Curated Seed Data)
-                Optional<JournalMetadata> cached = journalRepo.findByNameIgnoreCase(search);
+                // Check Database (Curated Seed Data) - Get LATEST year
+                Optional<JournalMetadata> cached = journalRepo.findTopByNameOrderByYearDesc(search);
                 if (cached.isPresent()) {
                         JournalMetadata m = cached.get();
                         System.out.println("JOURNAL LOOKUP: Found in database: " + m.getName() + " (IF: "

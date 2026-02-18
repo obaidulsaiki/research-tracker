@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "name", "publication_year" })
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -17,7 +20,10 @@ public class JournalMetadata {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
+    @Column(name = "publication_year")
+    private Integer year;
+
+    @Column(nullable = false)
     private String name;
 
     private String publisher;

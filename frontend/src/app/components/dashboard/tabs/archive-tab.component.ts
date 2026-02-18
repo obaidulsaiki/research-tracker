@@ -134,7 +134,7 @@ import { Research, Author, ResearchService } from '../../../services/research.se
               <th style="width: 150px">
                 <div class="sortable-header" (click)="toggleSort('status')">
                   Status
-                  <span class="sort-icon" [class.active]="sortField === 'status'">
+                  <span class="sort-icon" [style.visibility]="sortField === 'status' ? 'visible' : 'hidden'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>
@@ -142,7 +142,7 @@ import { Research, Author, ResearchService } from '../../../services/research.se
               <th style="width: 50px">
                 <div class="sortable-header" (click)="toggleSort('pid')">
                   PID
-                  <span class="sort-icon" [class.active]="sortField === 'pid'">
+                  <span class="sort-icon" [style.visibility]="sortField === 'pid' ? 'visible' : 'hidden'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>
@@ -150,15 +150,15 @@ import { Research, Author, ResearchService } from '../../../services/research.se
               <th style="width: 450px">
                 <div class="sortable-header" (click)="toggleSort('title')">
                   Research Project & Synopsis
-                  <span class="sort-icon" [class.active]="sortField === 'title'">
+                  <span class="sort-icon" [style.visibility]="sortField === 'title' ? 'visible' : 'hidden'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>
               </th>
-              <th style="width: 1000px">
+              <th style="width: 1500px">
                 <div class="sortable-header" (click)="toggleSort('authors')">
                   Collaborators
-                  <span class="sort-icon" [class.active]="sortField === 'authors'">
+                  <span class="sort-icon" [style.visibility]="sortField === 'authors' ? 'visible' : 'hidden'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>
@@ -166,7 +166,7 @@ import { Research, Author, ResearchService } from '../../../services/research.se
               <th style="width: 280px">
                 <div class="sortable-header" (click)="toggleSort('publication.name')">
                   Publication
-                  <span class="sort-icon" [class.active]="sortField === 'publication.name'">
+                  <span class="sort-icon" [style.visibility]="sortField === 'publication.name' ? 'visible' : 'hidden'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>
@@ -174,7 +174,7 @@ import { Research, Author, ResearchService } from '../../../services/research.se
               <th style="width: 70px">
                 <div class="sortable-header" (click)="toggleSort('publication.year')">
                   Year
-                  <span class="sort-icon" [class.active]="sortField === 'publication.year'">
+                  <span class="sort-icon" [style.visibility]="sortField === 'publication.year' ? 'visible' : 'hidden'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>
@@ -183,7 +183,7 @@ import { Research, Author, ResearchService } from '../../../services/research.se
               <th style="width: 100px">
                 <div class="sortable-header" (click)="toggleSort('publicVisibility')">
                   Visibility
-                  <span class="sort-icon" [class.active]="sortField === 'publicVisibility'">
+                  <span class="sort-icon" [style.visibility]="sortField === 'publicVisibility' ? 'visible' : 'hidden'">
                     {{ sortDirection === 'asc' ? '▲' : '▼' }}
                   </span>
                 </div>

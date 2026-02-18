@@ -48,9 +48,18 @@ export class DashboardComponent implements OnInit {
   successNotification = signal<string | null>(null);
   errorNotification = signal<string | null>(null);
 
+  private toastTimeout: any;
+
   showSuccess(message: string) {
-    this.successNotification.set(message);
-    setTimeout(() => this.successNotification.set(null), 4000);
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.successNotification.set(null); // Force reset to trigger change
+    setTimeout(() => {
+      this.successNotification.set(message);
+      this.toastTimeout = setTimeout(() => {
+        this.successNotification.set(null);
+        this.toastTimeout = null;
+      }, 4000);
+    }, 0);
   }
 
   showError(message: string) {
@@ -913,6 +922,7 @@ export class DashboardComponent implements OnInit {
     this.filterPublisher.set('all');
     this.filterQuartile.set('all');
     this.currentPage.set(1);
+    this.showSuccess('Filters cleared');
   }
 
   openAddModal() {
@@ -937,8 +947,10 @@ export class DashboardComponent implements OnInit {
     this.itemToEdit.set(undefined);
 
     // If a record was just saved, show the splashy global toast
-    if (this.researchService.lastActionItemId()) {
-      this.showSuccess('Record synchronized across database and dashboard.');
+    const newItemId = this.researchService.lastActionItemId();
+    if (newItemId) {
+      this.showSuccess('Research entry added successfully.');
+      this.researchService.lastActionItemId.set(null); // Reset after showing
     }
   }
 
@@ -953,6 +965,7 @@ export class DashboardComponent implements OnInit {
       this.researchService.delete(id).subscribe({
         next: () => {
           this.confirmDeleteId.set(null);
+          this.showSuccess('Research entry deleted successfully.');
         },
         error: (err) => {
           alert('Delete failed: ' + (err.error?.message || err.message));

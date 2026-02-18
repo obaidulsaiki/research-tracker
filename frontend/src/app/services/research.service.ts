@@ -119,7 +119,8 @@ export class ResearchService {
 
     save(research: Research): Observable<Research> {
         return this.http.post<Research>(this.apiUrl, research).pipe(
-            tap(() => {
+            tap((saved) => {
+                this.lastActionItemId.set(saved.id || null);
                 this.loadAll();
                 this.loadAnalytics();
                 this.loadHistory();

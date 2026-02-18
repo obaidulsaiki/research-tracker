@@ -58,31 +58,32 @@
                 (onCsv)="exportData()">
             </app-download-tab>
             }
-            @if (successNotification()) {
-            <div class="success-toast">
-                <div class="toast-content">
-                    <span class="toast-icon">✨</span>
-                    <div class="toast-text-group">
-                        <span class="toast-title">Update Successful</span>
-                        <span class="toast-msg">{{ successNotification() }}</span>
-                    </div>
-                </div>
-            </div>
-            }
-
-            @if (errorNotification()) {
-            <div class="error-toast">
-                <div class="toast-content">
-                    <span class="toast-icon">⚠️</span>
-                    <div class="toast-text-group">
-                        <span class="toast-title">Sync Error</span>
-                        <span class="toast-msg">{{ errorNotification() }}</span>
-                    </div>
-                </div>
-            </div>
-            }
         </div>
     </main>
+
+    @if (successNotification()) {
+    <div class="success-toast">
+        <div class="toast-content">
+            <span class="toast-icon">✨</span>
+            <div class="toast-text-group">
+                <span class="toast-title">Update Successful</span>
+                <span class="toast-msg">{{ successNotification() }}</span>
+            </div>
+        </div>
+    </div>
+    }
+
+    @if (errorNotification()) {
+    <div class="error-toast">
+        <div class="toast-content">
+            <span class="toast-icon">⚠️</span>
+            <div class="toast-text-group">
+                <span class="toast-title">Sync Error</span>
+                <span class="toast-msg">{{ errorNotification() }}</span>
+            </div>
+        </div>
+    </div>
+    }
 
     @if (showModal()) {
     <app-add-paper-modal [editData]="itemToEdit()" (close)="closeModal()"></app-add-paper-modal>
