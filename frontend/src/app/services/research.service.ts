@@ -37,6 +37,8 @@ export interface JournalMetadata {
     impactFactor: string;
     quartile: string;
     url: string;
+    venue?: string;
+    indexedBy?: string;
 }
 
 export interface Research {
@@ -74,6 +76,12 @@ export class ResearchService {
     public history = signal<HistoryEntry[]>([]);
     public analytics = signal<any>(null);
     public loading = signal<boolean>(false);
+
+    refresh(): void {
+        this.loadAll();
+        this.loadHistory();
+        this.loadAnalytics();
+    }
 
     loadAll(): void {
         this.loading.set(true);
@@ -160,6 +168,17 @@ export class ResearchService {
 
     fetchMetadata(doi: string): Observable<Research> {
         return this.http.get<Research>(`${this.apiUrl}/fetch-metadata`, { params: { doi } });
+    }
+
+    importExcel(file: File): Observable<Research[]> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.http.post<Research[]>(`${this.apiUrl}/import/excel`, formData).pipe(
+            tap(() => {
+                this.loadAll();
+                this.loadAnalytics();
+            })
+        );
     }
 
     importCsv(file: File): Observable<Research[]> {

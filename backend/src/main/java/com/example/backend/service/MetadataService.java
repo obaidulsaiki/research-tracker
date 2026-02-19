@@ -3,6 +3,8 @@ package com.example.backend.service;
 import com.example.backend.dto.AuthorDTO;
 import com.example.backend.dto.PublicationDTO;
 import com.example.backend.dto.ResearchDTO;
+import com.example.backend.dto.JournalMetadataDTO;
+import com.example.backend.dto.ConferenceMetadataDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -83,14 +85,27 @@ public class MetadataService {
 
                 // IMPROVEMENT: Try to refine journal metadata using curated JournalService
                 if (pub.getName() != null) {
-                    journalService.lookup(pub.getName()).ifPresent(journal -> {
-                        pub.setImpactFactor(journal.getImpactFactor());
-                        pub.setQuartile(journal.getQuartile());
-                        if (pub.getPublisher() == null || pub.getPublisher().equals("Unknown")) {
-                            pub.setPublisher(journal.getPublisher());
-                        }
-                        if (pub.getUrl() == null || pub.getUrl().isEmpty()) {
-                            pub.setUrl(journal.getUrl());
+                    journalService.lookup(pub.getName()).ifPresent(data -> {
+                        if (data instanceof JournalMetadataDTO) {
+                            JournalMetadataDTO journal = (JournalMetadataDTO) data;
+                            pub.setImpactFactor(journal.getImpactFactor());
+                            pub.setQuartile(journal.getQuartile());
+                            if (pub.getPublisher() == null || pub.getPublisher().equals("Unknown")) {
+                                pub.setPublisher(journal.getPublisher());
+                            }
+                            if (pub.getUrl() == null || pub.getUrl().isEmpty()) {
+                                pub.setUrl(journal.getUrl());
+                            }
+                        } else if (data instanceof ConferenceMetadataDTO) {
+                            ConferenceMetadataDTO conf = (ConferenceMetadataDTO) data;
+                            pub.setVenue(conf.getVenue());
+                            pub.setIndexedBy(conf.getIndexedBy());
+                            if (pub.getPublisher() == null || pub.getPublisher().equals("Unknown")) {
+                                pub.setPublisher(conf.getIndexedBy());
+                            }
+                            if (pub.getUrl() == null || pub.getUrl().isEmpty()) {
+                                pub.setUrl(conf.getUrl());
+                            }
                         }
                     });
                 }

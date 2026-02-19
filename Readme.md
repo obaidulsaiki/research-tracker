@@ -1,141 +1,116 @@
-# 🔬 Academic Research Tracker (Premium Edition)
+# 🔬 Research Tracker (Professional Suite)
 
-A high-performance, visually stunning ecosystem designed for modern researchers. This application simplifies the complexity of managing research pipelines—from initial hypothesis tracking to final publication—featuring professional-grade analytics and executive export capabilities.
+[![Tech Stack](https://img.shields.io/badge/Stack-Spring_Boot_%2B_Angular_21-blue.svg?style=for-the-badge&logo=spring)](https://github.com/obaidulsaiki/research-tracker)
+[![License](https://img.shields.io/badge/Status-Internal_Development-orange.svg?style=for-the-badge)](https://github.com/obaidulsaiki/research-tracker)
 
----
-
-## 🌟 Premium Features & Capabilities
-
-### 🏛️ Exhibition-Grade Dashboard
-Our "Premium 3.0" interface focuses on high-impact visual hierarchy and executive summaries.
-- **Hero Impact Summary**: Large metric cards tracking **Total Projects**, **Published Works**, **Accepted Papers**, and **Active In-Progress** initiatives.
-- **Deep Indigo & Electric Blue Theme**: A sophisticated color palette inspired by modern academic publishing.
-- **Micro-Animations & Glassmorphism**: Smooth UI transitions and blurred translucent panels for a premium feel.
-
-### 📄 Executive PDF Export (Exhibition Edition)
-Generate professional, submission-ready portfolio reports with a single click.
-- **Portrait-Optimized Layout**: Calibrated A4 Portrait design (680px width) ensures standard, top-to-bottom reading flow.
-- **Pill Badge Metadata System**: 
-    - **Venue Badges**: Highlighted with soft-pink pins (📍) for conference/journal names.
-    - **IF & RANK Badges**: Color-coded badges for Impact Factor and Journal Quartile (Q1-Q4).
-- **Status Accent Bars**: Visual indicators for research progress (Published, Accepted, Running, etc.).
-
-### 🔍 Smart Research Pipeline
-- **Unified Status Workflow**: A logical progression tracking your research lifecycle:
-  `PUBLISHED` > `ACCEPTED` > `RUNNING` (Submitted) > `WORKING` > `HYPOTHESIS` > `REJECTED` > `WITHDRAWN`.
-- **Intelligent Sorting**: Research items are prioritized by weight, ensuring your most impactful work is always showcased first.
-- **DOI Metadata Integration**: Automatic fetching of citation metadata via Crossref API integration.
-
-### 📊 Advanced Analytics & Tracking
-- **Interactive Distribution Charts**: Visualize your research spread across document types and publishers.
-- **Normalized Filtering**: Sophisticated case-insensitive filtering for project records.
-- **Cross-platform Desktop Client**: Powered by **Electron** for a native experience on Windows, macOS, and Linux.
-
-
-### 🖥️ Desktop Application (Electron Shell)
-The **Desktop Edition** provides a native-feeling experience for macOS, Windows, and Linux, wrapping the premium Angular interface into a dedicated window.
-- **Native Logic**: Custom application menus and deep system integration via Electron.
-- **Production Mode**: Automatically loads the production-compiled frontend for maximum speed.
-- **Packaging Ready**: Integrated with **electron-builder** for generating standalone `.exe` or `.dmg` installers.
+A high-fidelity academic ecosystem designed for elite researchers. This platform streamlines the research lifecycle—from hypothesis tracking to professional publication—featuring real-time analytics and enterprise-grade export capabilities.
 
 ---
 
-## 🛠️ Technical Deep Dive
+## 🚀 Key Feature Highlights
 
-### High-Performance Frontend
-- **Framework**: Angular 21 (Signals Architecture)
-- **Typography**: "Plus Jakarta Sans" & "Outfit" for readability.
-- **Performance**: Reactive data flows using Angular Signals.
-- **Print Engine**: Dedicated internal CSS injection for high-fidelity PDF rendering.
+### 🏛️ Premium Intelligence Dashboard
+Our **Next-Gen Interface** focuses on executive summaries and high-impact visual hierarchy.
+- **Dynamic Metric Engine**: Real-time tracking of **Total Projects**, **Q1 Quality Markers**, and **Publication Success Rates**.
+- **Interactive Analytics**: Data-driven insights into your research distribution across journals and conferences.
+- **Glassmorphic UI**: Sophisticated design with light/dark theme support and premium micro-animations.
 
-### Robust Backend Infrastructure
-- **Framework**: Spring Boot 4.x / Java 17
-- **Database**: PostgreSQL with Hibernate/JPA.
-- **Data Security**: Secure service-level logic for research metrics.
-- **Interoperability**: Advanced CSV/Excel processing engine.
+### 🛡️ Autonomous Data Integrity
+- **Scheduled Auto-Backup**: Set-and-forget file-based redundancy. Choose between **4h**, **12h**, or **24h** intervals.
+- **Instant Snapshot**: One-click manual backup trigger to secure your database immediately.
+- **Automatic Sync**: Ensures your research archive is always safe on the server filesystem.
 
----
+### 📄 Executive Export Engine
+- **Professional PDF**: Submission-ready portfolios with academic badges (IF, Rank, Quartile).
+- **Enterprise Excel**: Complex spreadsheet generation for deep data analysis.
+- **Portable CSV**: Universal data compatibility for research sharing.
 
-## 📁 Architectural Overview
-
-```text
-research-tracker/
-├── backend/            # Executive Spring Boot Engine
-├── frontend/           # Premium Angular Interface
-├── desktop/            # Native Desktop Shell (Electron)
-└── docs/               # Technical designs & walkthroughs
-```
+### 🌍 Optimized Public Scholar Profile
+- **Clean Aesthetics**: A curated, high-performance view for public showcasing.
+- **Privacy Centric**: Selective visibility controls (Public vs. Internal).
+- **Refined Branding**: Elegant presentation without development versioning or unnecessary noise.
 
 ---
 
-## 📦 Project Dependencies
+## 🛠️ Technical Architecture
 
-### Backend Ecosystem (Spring Boot)
-- **Spring Boot Starter WebMVC**: RESTful API framework.
-- **Spring Boot Starter Data JPA**: Persistence layer.
-- **PostgreSQL Database Driver**: DB integration.
-- **Project Lombok**: Reducing boilerplate code.
-- **OpenCSV (5.9)**: High-performance CSV processing.
+### 🧱 Robust Backend (Spring Boot Core)
+*Powering the research engine with security and speed.*
+- **Core Strategy**: Spring Boot 3.4.x / Java 17
+- **Data Layer**: Hibernate / JPA for PostgreSQL persistence.
+- **Parsing Engine**: OpenCSV for high-performance data hydration.
+- **Scheduling**: Spring @Scheduled tasks for autonomous backup management.
 
-### Frontend Ecosystem (Angular)
-- **Angular 21 (Core, Signals)**: Reactive architecture.
-- **Angular SSR**: Server-side rendering performance.
-- **RxJS (7.8)**: Reactive data streams.
-- **read-excel-file**: Excel ingestion.
-- **Electron (31.x)**: Desktop shell and native OS bridge.
-
----
-
-## 🚀 Zero-Hassle Quick Start (For Consumers)
-
-The ultimate way to run Research Tracker as a **True Native Desktop App** is to use a standalone executable.
-
-1.  **Generate Standalone App**: Double-click **`Build-Dist.bat`** in the root. This will automatically compile the backend, frontend, and desktop shell into a single package.
-2.  **Run the Executable**: Go to `desktop/dist/` and run the **Portable EXE**.
-    - **No Hassle**: No terminals, no `npm start`, no `mvnw` needed.
-    - **Self-Starting**: The app automatically launches the backend invisibly in the background.
-    - **Portable**: You can copy this `.exe` anywhere and it just works!
+### ⚡ Reactive Frontend (Angular Signals)
+*A state-of-the-art interface built for precision.*
+- **Version**: Angular 21 (Latest standalone architecture)
+- **State Management**: Reactive data flows via **Angular Signals**.
+- **Typography**: "Plus Jakarta Sans" & "Outfit" for premium readability.
+- **Design System**: High-custom CSS utility layer for maximum aesthetic control.
 
 ---
 
-## ⚙️ Development Setup (For Researchers/Developers)
+## 📦 Core Dependencies
 
-### 1. Database Configuration (PostgreSQL)
-Create a database named `research_tracker` and update the `backend/src/main/resources/application.properties` file:
+| Category | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Backend** | `Spring Web` | RESTful API orchestration |
+| | `Spring Data JPA` | Persistent storage management |
+| | `Lombok` | Drastic reduction of boilerplate |
+| | `OpenCSV` | Complex CSV processing engine |
+| **Frontend** | `Angular core` | Reactive component architecture |
+| | `RxJS` | Async stream management |
+| | `read-excel-file` | On-the-fly Excel ingestion |
+| **Desktop** | `Electron` | Native OS bridge (Win/Mac/Linux) |
+
+---
+
+## 📡 API Catalog (REST Endpoints)
+
+### 📄 Research Management (`/api/research`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Retrieve the complete research archive |
+| `GET` | `/{id}` | Fetch detailed data for a specific record |
+| `POST` | `/` | Save a new paper or update existing item |
+| `DELETE` | `/{id}` | Permanently remove a research record |
+| `GET` | `/analytics` | Real-time impact & distribution summary |
+| `GET` | `/export` | Download database as `research_portfolio.csv` |
+| `POST` | `/import` | Bulk upload via CSV file stream |
+
+### ⚙️ System Configuration (`/api/settings`)
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/` | Retrieve current backup intervals & preferences |
+| `POST` | `/` | Update auto-backup status (Enable/Disable) |
+| `POST` | `/trigger-backup` | Manual server-side backup execution |
+
+---
+
+## ⚙️ Development Ignition
+
+### 1️⃣ Database Strategy
+Ensure a PostgreSQL instance is running with a database named `research_tracker`.
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/research_tracker
-spring.datasource.username=your_username
-spring.datasource.password=your_password
+spring.datasource.username=postgres
+spring.datasource.password=your_secret_password
 ```
 
-### 2. Backend Ignition
+### 2️⃣ Start the Engine
 ```bash
-cd backend
-./mvnw spring-boot:run
+# Backend (Server)
+cd backend && ./mvnw spring-boot:run
+
+# Frontend (Web UI)
+cd frontend && npm install && npm start
 ```
 
-### 3. Frontend Initialization (Web)
+### 3️⃣ Desktop Launch (Optional)
 ```bash
-cd frontend
-npm install
-npm start
+# Electron Wrapper
+cd desktop && npm install && npm start
 ```
-🔗 **Web Access**: `http://localhost:4200`
-
-### 4. Desktop Launch (Electron)
-```bash
-cd desktop
-npm install
-npm start
-```
-*(Tip: Use **Run-App.bat** instead to launch both Backend and Desktop at once!)*
 
 ---
-
-## 📝 Research Workflow Recommendation
-1. **Import Context**: Start by importing your existing `Research Archive` CSV via the "Upload" button in the Dashboard.
-2. **Metadata Sync**: Add new papers using their DOI for automatic metadata population.
-3. **Executive Portfolio**: Use the "Export PDF" feature under the Download tab to generate your high-impact academic resume.
-
----
-*Developed for the modern researcher who values both precision and presentation.*
+*Built with Precision for the Academic Community. Still evolving, ever-improving.*

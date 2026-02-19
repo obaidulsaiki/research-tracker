@@ -321,9 +321,11 @@ import { Research, Author, ResearchService } from '../../../services/research.se
                         [style.background]="p === currentPage ? 'var(--p-accent)' : 'white'" 
                         [style.color]="p === currentPage ? 'white' : 'inherit'" 
                         [style.box-shadow]="p === currentPage ? 'var(--p-shadow)' : 'none'"
+                        [style.cursor]="p === -1 ? 'default' : 'pointer'"
                         style="width: 44px; height: 44px; padding: 0; font-weight: 800;"
-                        (click)="onPageChange.emit(p)">
-                  {{ p }}
+                        [disabled]="p === -1"
+                        (click)="p !== -1 && onPageChange.emit(p)">
+                  {{ p === -1 ? '...' : p }}
                 </button>
               }
               <button class="btn-glass" style="width: 44px; height: 44px; padding: 0;" [disabled]="currentPage === totalPages" (click)="onPageChange.emit(currentPage + 1)">›</button>
@@ -470,7 +472,12 @@ import { Research, Author, ResearchService } from '../../../services/research.se
 })
 export class ArchiveTabComponent {
   public researchService: ResearchService = inject(ResearchService);
-  @Input() papers: Research[] = [];
+  private _papers: Research[] = [];
+  @Input() set papers(value: Research[]) {
+    this._papers = value;
+  }
+  get papers() { return this._papers; }
+
   @Input() totalPapersCount: number = 0;
   @Input() totalFilteredCount: number = 0;
   @Input() currentPage: number = 1;

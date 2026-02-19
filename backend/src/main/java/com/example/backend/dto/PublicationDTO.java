@@ -10,6 +10,7 @@ public class PublicationDTO {
     private String publisher;
     private String year;
     private String venue;
+    private String indexedBy;
     private String impactFactor;
     private String quartile;
     private String url;

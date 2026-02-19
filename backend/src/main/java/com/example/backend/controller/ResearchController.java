@@ -1,7 +1,6 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.HistoryEntryDTO;
-import com.example.backend.dto.JournalMetadataDTO;
 import com.example.backend.dto.ResearchDTO;
 import com.example.backend.repository.ResearchRepo;
 import com.example.backend.service.CsvService;
@@ -38,7 +37,7 @@ public class ResearchController {
     private JournalService journalService;
 
     @GetMapping("/journal-lookup")
-    public ResponseEntity<JournalMetadataDTO> lookupJournal(@RequestParam String name) {
+    public ResponseEntity<?> lookupJournal(@RequestParam String name) {
         return journalService.lookup(name)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

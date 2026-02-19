@@ -356,7 +356,7 @@ import { ResearchService, Research, Author } from '../../services/research.servi
 })
 export class AddPaperModalComponent implements OnInit, OnChanges {
   public researchService: ResearchService = inject(ResearchService);
-  @Output() close = new EventEmitter<void>();
+  @Output() close = new EventEmitter<string | undefined>();
 
   tab = signal('basic');
   paper: Research = this.getEmptyPaper();
@@ -575,14 +575,15 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
 
     this.researchService.save(this.paper).subscribe({
       next: (saved) => {
-        this.successMessage.set('✨ Changes saved to database!');
+        const msg = this.paper.id ? '✨ Changes saved to database!' : '✨ New record added successfully!';
+        this.successMessage.set(msg);
         this.researchService.lastActionItemId.set(saved.id || null);
 
         // Auto-clear highlight after 5s
         setTimeout(() => this.researchService.lastActionItemId.set(null), 5000);
 
         // Delay close to show success
-        setTimeout(() => this.close.emit(), 1000);
+        setTimeout(() => this.close.emit(msg), 1000);
       },
       error: (err) => {
         console.error('Failed to save research:', err);

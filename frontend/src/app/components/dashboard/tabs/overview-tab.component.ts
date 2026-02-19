@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
       <!-- STATS VISUALIZATION -->
       <div class="stat-grid">
          @for (stat of stats; track stat.label) {
-           <div class="p-card stat-item">
+           <div class="p-card stat-item interactive" (click)="statClick.emit(stat.label)">
              <div class="stat-bubble">
                 {{ getStatIcon(stat.label) }}
              </div>
@@ -115,7 +115,22 @@ import { CommonModule } from '@angular/common';
     .overview-container { display: flex; flex-direction: column; gap: 2rem; }
     
     .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-    .stat-item { padding: 1.25rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; }
+    .stat-item { padding: 1.25rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; transition: all 0.3s ease; }
+    .stat-item.interactive { cursor: pointer; position: relative; overflow: hidden; }
+    .stat-item.interactive:hover { 
+      transform: translateY(-5px); 
+      border-color: var(--p-accent); 
+      box-shadow: 0 10px 25px -5px var(--p-accent-glow);
+    }
+    .stat-item.interactive::after {
+      content: 'VIEW ALL →';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--p-accent); color: white;
+      font-size: 0.5rem; font-weight: 800; padding: 2px 0;
+      transform: translateY(100%); transition: transform 0.3s ease;
+    }
+    .stat-item.interactive:hover::after { transform: translateY(0); }
+
     .stat-bubble { 
       width: 48px; height: 48px; background: var(--p-gradient-soft); border-radius: 50%; 
       display: flex; align-items: center; justify-content: center; font-size: 1.2rem; 
@@ -191,6 +206,7 @@ export class OverviewTabComponent {
   @Input() stats: any[] = [];
   @Input() history: any[] = [];
   @Output() viewAllHistory = new EventEmitter<void>();
+  @Output() statClick = new EventEmitter<string>();
 
   getStatIcon(label: string): string {
     const l = label.toLowerCase();
