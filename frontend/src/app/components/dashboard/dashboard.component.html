@@ -11,8 +11,10 @@
 
         <div class="app-content">
             @if (activeTab() === 'overview') {
-            <app-overview-tab [stats]="mainStats()" [history]="recentHistory()"
-                (viewAllHistory)="activeTab.set('history')" (statClick)="onStatFilterChange($event)">
+            <app-overview-tab [stats]="mainStats()" [history]="recentHistory()" [activityData]="activityData()"
+                [settings]="sysSettings()" (viewAllHistory)="activeTab.set('history')"
+                (statClick)="onStatFilterChange($event)"
+                (onUpdateSettings)="settingsService.updateSettings($event).subscribe()">
             </app-overview-tab>
             }
 

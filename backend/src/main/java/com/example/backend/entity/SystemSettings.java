@@ -14,5 +14,8 @@ public class SystemSettings {
 
     private boolean autoBackupEnabled = false;
     private int backupIntervalHours = 24; // Default to 24h
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastBackupTime;
+
+    private int dailyResearchGoal = 8; // Default research goal in hours
 }

@@ -1,10 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { SystemSettings } from '../../../services/settings.service';
 
 @Component({
   selector: 'app-overview-tab',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <section class="overview-container animate-reveal">
       <!-- STATS VISUALIZATION -->
@@ -33,29 +35,65 @@ import { CommonModule } from '@angular/common';
           <div class="chart-header">
             <div class="chart-titles">
               <h3 class="chart-title">Activity Insights</h3>
-              <p class="chart-subtitle">Engagement and research intensity over time</p>
+              <p class="chart-subtitle">Precision tracking against your academic goals</p>
             </div>
+            
+            @if (settings) {
+              <div class="goal-setter">
+                <span class="goal-label">Daily Goal:</span>
+                <select [ngModel]="settings.dailyResearchGoal" (ngModelChange)="updateGoal(settings, $event)" class="goal-select">
+                  @for (g of [4, 6, 8, 10, 12]; track g) {
+                    <option [ngValue]="g">{{ g }}h</option>
+                  }
+                </select>
+              </div>
+            }
+
             <button class="btn-glass audit-btn" (click)="viewAllHistory.emit()">Full Audit Log</button>
           </div>
           
           <!-- ANALYTICS VISUALIZER -->
-          <div class="visualizer">
-              @for (h of [80, 40, 100, 60, 90, 70, 110]; track $index) {
-                <div class="bar" [style.height.%]="h">
-                  <div class="bar-value">{{ h }}%</div>
+          @if (settings) {
+            <div class="visualizer">
+                @for (h of activityData; track $index) {
+                  <div class="bar-container">
+                    <div class="bar" 
+                         [style.height.%]="(Math.max(h || 0, 0.5) / 12) * 100"
+                         [class.goal-met]="h >= settings.dailyResearchGoal">
+                      <div class="bar-value">{{ h > 0 ? h.toFixed(1) : h }}h</div>
+                      @if (h >= settings.dailyResearchGoal) {
+                        <div class="success-star">✨</div>
+                      }
+                    </div>
+                  </div>
+                } @empty {
+                   <div class="empty-chart">
+                      <p>No activity recorded in the last 7 days</p>
+                   </div>
+                }
+                <!-- DYNAMIC BASELINE -->
+                <div class="baseline" [style.bottom.%]="(settings.dailyResearchGoal / 12) * 100">
+                  <span class="baseline-tag">{{ settings.dailyResearchGoal }}h TARGET</span>
                 </div>
-              }
-              <div class="baseline"></div>
-          </div>
+            </div>
+          } @else {
+            <div class="visualizer loading-viz">
+                <p>Initializing analysis engine...</p>
+            </div>
+          }
           
           <div class="chart-legend">
              <div class="legend-item">
                 <div class="legend-dot accent"></div>
-                <span>Research Capacity</span>
+                <span>Research Time</span>
              </div>
              <div class="legend-item">
-                <div class="legend-dot baseline-dot"></div>
-                <span>Baseline</span>
+                <div class="legend-dot goal-dot"></div>
+                <span>Goal Met</span>
+             </div>
+             <div class="legend-item">
+                <div class="legend-dot target-dot"></div>
+                <span>Target Focus</span>
              </div>
           </div>
         </div>
@@ -93,7 +131,7 @@ import { CommonModule } from '@angular/common';
             <div class="status-icon-box">🛡️</div>
             <div>
                 <h3 class="status-title">Research Infrastructure</h3>
-                <p class="status-desc">Metadata synchronization via Crossref API is active.</p>
+                <p class="status-desc">Metadata synchronization and auto-backup engine are active.</p>
             </div>
         </div>
         
@@ -141,28 +179,68 @@ import { CommonModule } from '@angular/common';
     .mini-graph { margin-top: 0.5rem; opacity: 0.4; }
 
     .view-split { display: grid; grid-template-columns: 1.6fr 1fr; gap: 2rem; }
-    .chart-card { min-height: 400px; padding: 1.5rem; }
-    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .chart-card { min-height: 400px; padding: 1.5rem; position: relative; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; }
+    .chart-titles { flex: 1; }
     .chart-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; letter-spacing: -0.3px; }
-    .chart-subtitle { font-size: 0.8rem; color: var(--p-text-muted); font-weight: 500; }
+    .chart-subtitle { font-size: 0.75rem; color: var(--p-text-muted); font-weight: 500; }
+    
+    .goal-setter { 
+      display: flex; align-items: center; gap: 0.5rem; background: var(--p-bg-subtle);
+      padding: 0.4rem 0.8rem; border-radius: 10px; border: 1px solid var(--p-border);
+    }
+    .goal-label { font-size: 0.65rem; font-weight: 800; color: var(--p-text-muted); text-transform: uppercase; }
+    .goal-select {
+      background: transparent; border: none; font-weight: 900; font-size: 0.8rem; color: var(--p-accent); cursor: pointer;
+    }
+
     .audit-btn { padding: 0.5rem 1rem; font-size: 0.75rem; height: 36px; }
 
     .visualizer { 
       padding: 1.5rem; background: var(--p-bg-subtle); border-radius: 12px; 
       height: 240px; position: relative; overflow: hidden; display: flex; 
-      align-items: flex-end; gap: 0.75rem; 
+      align-items: flex-end; gap: 0.75rem; border: 1px solid var(--p-border);
     }
-    .bar { flex: 1; border-radius: 6px 6px 0 0; position: relative; background: var(--p-gradient); }
-    .bar-value { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.55rem; font-weight: 800; color: var(--p-accent); }
-    .baseline { position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: var(--p-border); }
+    .bar-container { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+    .bar { 
+      width: 100%; border-radius: 6px 6px 0 0; position: relative; 
+      background: var(--p-text-muted); opacity: 0.4; transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+    .bar.goal-met { 
+      background: linear-gradient(to top, #10b981, #34d399); opacity: 1; 
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+    .bar-value { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 0.55rem; font-weight: 800; color: var(--p-text-muted); }
+    .bar.goal-met .bar-value { color: #059669; }
+    
+    .success-star {
+      position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+      font-size: 0.8rem; animation: float 2s infinite ease-in-out;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(-50%, 0); }
+      50% { transform: translate(-50%, -5px); }
+    }
+
+    .baseline { 
+      position: absolute; left: 0; right: 0; height: 0; 
+      border-top: 2px dashed #f59e0b; z-index: 10;
+      transition: all 0.5s ease;
+    }
+    .baseline-tag {
+      position: absolute; right: 0px; top: -14px;
+      background: #fef3c7; color: #92400e; padding: 2px 6px;
+      font-size: 0.5rem; font-weight: 900; border-radius: 4px; border: 1px solid #fde68a;
+    }
 
     .chart-legend { margin-top: 1.5rem; display: flex; gap: 1.5rem; }
     .legend-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.7rem; font-weight: 700; color: var(--p-text-muted); }
     .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
-    .legend-dot.accent { background: var(--p-accent); }
-    .legend-dot.baseline-dot { background: var(--p-bg-alt); }
+    .legend-dot.accent { background: var(--p-text-muted); opacity: 0.4; }
+    .legend-dot.goal-dot { background: #10b981; }
+    .legend-dot.target-dot { border: 1.5px dashed #f59e0b; }
 
-    .activity-card { padding: 1.5rem; background: white; }
+    .activity-card { padding: 1.5rem; background: white; border: 1px solid var(--p-border); }
     .activity-title { font-family: var(--font-display); font-size: 1.15rem; margin-bottom: 1.5rem; font-weight: 800; }
     .activity-feed { display: flex; flex-direction: column; gap: 1rem; }
     .feed-item { display: flex; gap: 1rem; align-items: flex-start; position: relative; padding-bottom: 0.25rem; }
@@ -176,11 +254,13 @@ import { CommonModule } from '@angular/common';
     .empty-feed { text-align: center; padding: 3rem; opacity: 0.4; }
     .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
     .empty-text { font-weight: 800; font-size: 0.8rem; }
+    .empty-chart { display: flex; height: 100%; width: 100%; align-items: center; justify-content: center; color: var(--p-text-muted); font-weight: 800; font-size: 0.7rem; }
+    .loading-viz { display: flex; align-items: center; justify-content: center; color: var(--p-text-muted); font-size: 0.8rem; font-weight: 600; }
 
     .status-banner { 
       background: var(--p-gradient); color: white; display: flex; 
       align-items: center; justify-content: space-between; padding: 1.25rem 2rem; 
-      border-radius: 16px;
+      border-radius: 16px; border: none;
     }
     .status-main { display: flex; align-items: center; gap: 1.5rem; }
     .status-icon-box { 
@@ -203,10 +283,14 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class OverviewTabComponent {
+  protected readonly Math = Math;
   @Input() stats: any[] = [];
   @Input() history: any[] = [];
+  @Input() activityData: number[] = [];
+  @Input() settings: SystemSettings | null = null;
   @Output() viewAllHistory = new EventEmitter<void>();
   @Output() statClick = new EventEmitter<string>();
+  @Output() onUpdateSettings = new EventEmitter<SystemSettings>();
 
   getStatIcon(label: string): string {
     const l = label.toLowerCase();
@@ -221,5 +305,10 @@ export class OverviewTabComponent {
     if (!dateStr) return '---';
     const d = new Date(dateStr);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  updateGoal(s: SystemSettings, goal: number) {
+    const updated = { ...s, dailyResearchGoal: goal };
+    this.onUpdateSettings.emit(updated);
   }
 }

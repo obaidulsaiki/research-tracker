@@ -15,6 +15,7 @@ import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component'
 import { ResearchService, Research } from '../../services/research.service';
 import { AnalyticsService } from '../../services/analytics.service';
 import { SearchFilterService } from '../../services/search-filter.service';
+import { SettingsService } from '../../services/settings.service';
 import { ResearchUtility } from '../../utils/research.utils';
 
 @Component({
@@ -40,6 +41,7 @@ import { ResearchUtility } from '../../utils/research.utils';
 export class DashboardComponent implements OnInit, OnDestroy {
   // Services
   protected researchService = inject(ResearchService);
+  protected settingsService = inject(SettingsService);
   private analyticsSvc = inject(AnalyticsService);
   private filterSvc = inject(SearchFilterService);
   private router = inject(Router);
@@ -101,6 +103,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.history().slice(0, 5);
   });
 
+  sysSettings = computed(() => this.settingsService.settings() || {
+    dailyResearchGoal: 8,
+    autoBackupEnabled: false,
+    backupIntervalHours: 24
+  });
+
+  activityData = computed(() => {
+    const entries = this.history();
+    console.log('DASHBOARD: Computing activity for', entries.length, 'history entries');
+    const last7Days = [];
+    const now = new Date();
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+
+      const count = entries.filter(e => {
+        if (!e.timestamp) return false;
+        const entryDate = new Date(e.timestamp);
+        return entryDate.getFullYear() === d.getFullYear() &&
+          entryDate.getMonth() === d.getMonth() &&
+          entryDate.getDate() === d.getDate();
+      }).length;
+
+      // Scale count to a 0-12 range for the chart (where 1 count = 2 units, max 12)
+      last7Days.push(Math.min(count * 2.5, 12));
+    }
+    return last7Days;
+  });
+
   groupedHistory = computed(() => {
     const entries = this.history();
     const groups: Map<string, any[]> = new Map();
@@ -127,7 +160,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    this.researchService.refresh();
+    this.researchService.loadAll();
+    this.settingsService.loadSettings();
   }
 
   onTabChange(tab: string) {
@@ -180,7 +214,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.confirmDeleteId.set(id);
   }
 
-  // Deletion
   handleDelete() {
     const id = this.confirmDeleteId();
     if (id !== null) {

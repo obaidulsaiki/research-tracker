@@ -7,6 +7,7 @@ export interface SystemSettings {
     autoBackupEnabled: boolean;
     backupIntervalHours: number;
     lastBackupTime?: string;
+    dailyResearchGoal: number;
 }
 
 @Injectable({

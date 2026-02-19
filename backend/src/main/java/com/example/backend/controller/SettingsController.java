@@ -27,6 +27,7 @@ public class SettingsController {
         SystemSettings existing = settingsRepo.getSettings();
         existing.setAutoBackupEnabled(newSettings.isAutoBackupEnabled());
         existing.setBackupIntervalHours(newSettings.getBackupIntervalHours());
+        existing.setDailyResearchGoal(newSettings.getDailyResearchGoal());
         // lastBackupTime is managed by the service
         return settingsRepo.save(existing);
     }

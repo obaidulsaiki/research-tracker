@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 @Data
 public class HistoryEntryDTO {
     private Long id;
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
     private String changeType;
     private String oldValue;
