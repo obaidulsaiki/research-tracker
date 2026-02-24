@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Research } from '../../../services/research.service';
+import { AnalyticsService } from '../../../services/analytics.service';
+import { ResearchService } from '../../../services/research.service';
 
 @Component({
   selector: 'app-analytics-tab',
@@ -16,17 +17,17 @@ import { Research } from '../../../services/research.service';
               <span class="header-icon type">🔖</span>
               <h3 class="card-title">Distribution by Type</h3>
             </div>
-            <span class="p-badge count-badge">{{ totalCount }} Total</span>
+            <span class="p-badge count-badge">{{ totalCount() }} Total</span>
           </div>
           <div class="analytics-list">
-            @for (entry of typeDist | keyvalue; track entry.key) {
+            @for (entry of stats.typeDistribution() | keyvalue; track entry.key) {
               <div class="analytics-item hov-expand">
                 <div class="item-meta">
                   <span class="item-label">{{ entry.key }}</span>
                   <span class="item-value accent">{{ entry.value }}</span>
                 </div>
                 <div class="p-progress-wrap accent-glow">
-                  <div class="p-progress-fill variant-accent" [style.width.%]="(+(entry.value || 0)) / totalCount * 100"></div>
+                  <div class="p-progress-fill variant-accent" [style.width.%]="(+(entry.value || 0)) / totalCount() * 100"></div>
                 </div>
               </div>
             }
@@ -42,14 +43,14 @@ import { Research } from '../../../services/research.service';
             </div>
           </div>
           <div class="analytics-list">
-            @for (entry of positionDist | keyvalue; track entry.key) {
+            @for (entry of stats.positionDistribution() | keyvalue; track entry.key) {
               <div class="analytics-item hov-expand">
                 <div class="item-meta">
                   <span class="item-label">{{ getOrdinalLabel(+entry.key) + ' Author' }}</span>
                   <span class="item-value indigo">{{ entry.value }}</span>
                 </div>
                 <div class="p-progress-wrap indigo-glow">
-                  <div class="p-progress-fill variant-indigo" [style.width.%]="(+(entry.value || 0)) / totalCount * 100"></div>
+                  <div class="p-progress-fill variant-indigo" [style.width.%]="(+(entry.value || 0)) / totalCount() * 100"></div>
                 </div>
               </div>
             }
@@ -65,14 +66,14 @@ import { Research } from '../../../services/research.service';
             </div>
           </div>
           <div class="analytics-list">
-            @for (entry of statusDist | keyvalue; track entry.key) {
+            @for (entry of stats.statusDistribution() | keyvalue; track entry.key) {
               <div class="analytics-item hov-expand">
                 <div class="item-meta">
                   <span class="item-label">{{ entry.key | titlecase }}</span>
                   <span class="item-value success">{{ entry.value }}</span>
                 </div>
                 <div class="p-progress-wrap success-glow">
-                  <div class="p-progress-fill variant-success" [style.width.%]="(+(entry.value || 0)) / totalCount * 100"></div>
+                  <div class="p-progress-fill variant-success" [style.width.%]="(+(entry.value || 0)) / totalCount() * 100"></div>
                 </div>
               </div>
             }
@@ -88,14 +89,14 @@ import { Research } from '../../../services/research.service';
             </div>
           </div>
           <div class="analytics-list">
-            @for (entry of quartileDist | keyvalue; track entry.key) {
+            @for (entry of stats.quartileDistribution() | keyvalue; track entry.key) {
               <div class="analytics-item hov-expand">
                 <div class="item-meta">
                   <span class="item-label">{{ entry.key }}</span>
                   <span class="item-value warning">{{ entry.value }}</span>
                 </div>
                 <div class="p-progress-wrap warning-glow">
-                  <div class="p-progress-fill variant-warning" [style.width.%]="(+(entry.value || 0)) / totalCount * 100"></div>
+                  <div class="p-progress-fill variant-warning" [style.width.%]="(+(entry.value || 0)) / totalCount() * 100"></div>
                 </div>
               </div>
             }
@@ -165,11 +166,11 @@ import { Research } from '../../../services/research.service';
   `]
 })
 export class AnalyticsTabComponent {
-  @Input() totalCount: number = 0;
-  @Input() typeDist: Record<string, number> = {};
-  @Input() positionDist: Record<string, number> = {};
-  @Input() statusDist: Record<string, number> = {};
-  @Input() quartileDist: Record<string, number> = {};
+  private analyticsService = inject(AnalyticsService);
+  private researchService = inject(ResearchService);
+
+  public stats = this.analyticsService.getStatDistributions(this.researchService.researchItems);
+  public totalCount = computed(() => this.researchService.researchItems().length);
 
   getOrdinalLabel(n: number): string {
     const s = ["th", "st", "nd", "rd"];

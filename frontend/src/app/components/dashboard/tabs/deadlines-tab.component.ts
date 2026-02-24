@@ -86,7 +86,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
               <div class="timeline-track"></div>
               <div class="milestone-steps">
                 <div [innerHTML]="renderMilestoneStep('SUBMISSION', conf.submissionDeadline)"></div>
-                <div [innerHTML]="renderMilestoneStep('REVIEW', conf.notificationDate)"></div>
+                <div [innerHTML]="renderMilestoneStep('NOTIFICATION', conf.notificationDate)"></div>
                 <div [innerHTML]="renderMilestoneStep('FINAL', conf.cameraReadyDeadline)"></div>
                 <div [innerHTML]="renderMilestoneStep('REG', conf.registrationDeadline)"></div>
                 <div [innerHTML]="renderMilestoneStep('EVENT', conf.conferenceDate)"></div>
@@ -209,7 +209,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
   `,
   styles: [`
     :host { --accent: #6366f1; --accent-glow: rgba(99, 102, 241, 0.4); }
-    .dashboard-wrapper { padding: 2rem; max-width: 1100px; margin: 0 auto; color: #1e293b; }
+    .dashboard-wrapper { padding: 0 2rem 2rem 2rem; max-width: 1100px; margin: 0 auto; color: #1e293b; }
 
     /* HEADER */
     .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; }

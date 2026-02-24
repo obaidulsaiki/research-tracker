@@ -1,5 +1,8 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { AnalyticsService } from '../../../services/analytics.service';
+import { ResearchService } from '../../../services/research.service';
 
 @Component({
   selector: 'app-authors-tab',
@@ -11,12 +14,12 @@ import { CommonModule } from '@angular/common';
         <div class="brand-icon" style="flex-shrink: 0;">🌐</div>
         <div>
           <h2 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 0.25rem;">Research Network</h2>
-          <p style="color: var(--p-text-muted); font-size: 0.95rem;">You have collaborated with <b>{{ coAuthors.length }}</b> unique researchers across all projects.</p>
+          <p style="color: var(--p-text-muted); font-size: 0.95rem;">You have collaborated with <b>{{ stats.coAuthorStats().length }}</b> unique researchers across all projects.</p>
         </div>
       </div>
 
       <div class="stat-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
-        @for (author of coAuthors; track author.name) {
+        @for (author of stats.coAuthorStats(); track author.name) {
           <div class="p-card" style="display: flex; gap: 1.25rem; align-items: center; padding: 1.25rem;">
             <div class="p-avatar">{{ author.name.charAt(0) }}</div>
             <div style="flex: 1;">
@@ -25,7 +28,7 @@ import { CommonModule } from '@angular/common';
                 {{ author.count }} {{ author.count === 1 ? 'Collaboration' : 'Collaborations' }}
               </div>
             </div>
-            <button class="view-btn" (click)="viewAuthor.emit(author.name)">VIEW</button>
+            <button class="view-btn" (click)="viewAuthor(author.name)">VIEW</button>
           </div>
         } @empty {
           <div style="grid-column: 1 / -1; text-align: center; padding: 5rem;">
@@ -47,6 +50,14 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class AuthorsTabComponent {
-  @Input() coAuthors: any[] = [];
-  @Output() viewAuthor = new EventEmitter<string>();
+  private router = inject(Router);
+  private analyticsService = inject(AnalyticsService);
+  private researchService = inject(ResearchService);
+
+  public stats = this.analyticsService.getStatDistributions(this.researchService.researchItems);
+
+  viewAuthor(name: string) {
+    this.router.navigate(['/author', name]);
+  }
 }
+

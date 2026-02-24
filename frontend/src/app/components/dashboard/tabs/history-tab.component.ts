@@ -1,7 +1,7 @@
-import { Component, Input, computed, signal } from '@angular/core';
+import { Component, computed, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Research } from '../../../services/research.service';
+import { ResearchService, Research } from '../../../services/research.service';
 
 @Component({
   selector: 'app-history-tab',
@@ -34,7 +34,7 @@ import { Research } from '../../../services/research.service';
               <span class="stat-lbl">Deleted</span>
             </div>
             <div class="stat-chip total">
-              <span class="stat-val">{{ totalEvents }}</span>
+              <span class="stat-val">{{ totalEvents() }}</span>
               <span class="stat-lbl">Total Events</span>
             </div>
           </div>
@@ -209,26 +209,39 @@ import { Research } from '../../../services/research.service';
   `]
 })
 export class HistoryTabComponent {
-  @Input() groupedHistory: any[] = [];
-  @Input() totalEvents: number = 0;
-  @Input() researchItems: Research[] = [];
+  private researchService = inject(ResearchService);
+
+  public researchItems = this.researchService.researchItems;
+  public totalEvents = computed(() => this.researchService.history().length);
+
+  public groupedHistory = computed(() => {
+    const logs = this.researchService.history();
+    const groups = new Map<string, any[]>();
+    for (const log of logs) {
+      if (!log.timestamp) continue;
+      const d = new Date(log.timestamp).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      if (!groups.has(d)) groups.set(d, []);
+      groups.get(d)!.push(log);
+    }
+    return Array.from(groups.entries()).map(([date, items]) => ({ date, items }));
+  });
 
   searchQuery = '';
   filterType = 'all';
 
   get createCount(): number {
-    return this.groupedHistory.flatMap(g => g.items).filter((l: any) => l.changeType === 'CREATED').length;
+    return this.groupedHistory().flatMap(g => g.items).filter((l: any) => l.changeType === 'CREATED').length;
   }
   get updateCount(): number {
-    return this.groupedHistory.flatMap(g => g.items).filter((l: any) => l.changeType?.endsWith('_CHANGE')).length;
+    return this.groupedHistory().flatMap(g => g.items).filter((l: any) => l.changeType?.endsWith('_CHANGE')).length;
   }
   get deleteCount(): number {
-    return this.groupedHistory.flatMap(g => g.items).filter((l: any) => l.changeType === 'DELETED').length;
+    return this.groupedHistory().flatMap(g => g.items).filter((l: any) => l.changeType === 'DELETED').length;
   }
 
   get filteredGroups(): any[] {
     const q = this.searchQuery.toLowerCase().trim();
-    return this.groupedHistory
+    return this.groupedHistory()
       .map(group => ({
         ...group,
         items: group.items.filter((log: any) => {
@@ -264,7 +277,7 @@ export class HistoryTabComponent {
   }
 
   getPaperTitle(researchId: number): string {
-    const item = this.researchItems.find(r => r.id === researchId);
+    const item = this.researchItems().find(r => r.id === researchId);
     return item?.title || '';
   }
 

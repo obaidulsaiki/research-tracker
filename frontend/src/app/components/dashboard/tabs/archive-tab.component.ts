@@ -1,6 +1,8 @@
-import { Component, Input, Output, EventEmitter, inject, ElementRef, ViewChild, HostListener } from '@angular/core'; // v2
+import { Component, inject, ElementRef, ViewChild, HostListener, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Research, Author, ResearchService } from '../../../services/research.service';
+import { SearchFilterService } from '../../../services/search-filter.service';
+import { DashboardComponent } from '../dashboard.component';
 
 @Component({
   selector: 'app-archive-tab',
@@ -16,10 +18,10 @@ import { Research, Author, ResearchService } from '../../../services/research.se
             <p class="subtitle">Manage your comprehensive research database</p>
           </div>
           <div class="action-group">
-             <button class="btn-glass" (click)="onClearFilters.emit()" title="Reset Filters">
+             <button class="btn-glass" (click)="onClearFilters()" title="Reset Filters">
                 <span class="btn-icon">🔄</span>
              </button>
-             <button class="btn-vibrant" (click)="onSyncPublic.emit()">
+             <button class="btn-vibrant" (click)="onSyncPublic()">
                 <span>🌐</span> Publicize Database
              </button>
           </div>
@@ -28,7 +30,7 @@ import { Research, Author, ResearchService } from '../../../services/research.se
         <div class="filter-grid">
           <div class="filter-item">
             <label>Current Status</label>
-            <select class="p-select" [value]="filterStatus" (change)="onFilterChange('status', $event)">
+            <select class="p-select" [value]="searchFilter.filterStatus()" (change)="onFilterChange('status', $event)">
               <option value="all">Every Status</option>
               <option value="WORKING">Working</option>
               <option value="RUNNING">Running</option>
@@ -42,9 +44,9 @@ import { Research, Author, ResearchService } from '../../../services/research.se
 
           <div class="filter-item type-filter">
             <label>Doc Type</label>
-            <select class="p-select" [value]="filterType" (change)="onFilterChange('type', $event)">
+            <select class="p-select" [value]="searchFilter.filterType()" (change)="onFilterChange('type', $event)">
               <option value="all">All Document Types</option>
-              @for (t of availableTypes; track t) {
+              @for (t of availableTypes(); track t) {
                 <option [value]="t">{{ t | titlecase }}</option>
               }
             </select>
@@ -52,9 +54,9 @@ import { Research, Author, ResearchService } from '../../../services/research.se
 
           <div class="filter-item year-filter">
             <label>Year</label>
-            <select class="p-select" [value]="filterYear" (change)="onFilterChange('year', $event)">
+            <select class="p-select" [value]="searchFilter.filterYear()" (change)="onFilterChange('year', $event)">
               <option value="all">Any Year</option>
-              @for (y of availableYears; track y) {
+              @for (y of availableYears(); track y) {
                 <option [value]="y">{{ y }}</option>
               }
             </select>
@@ -67,15 +69,12 @@ import { Research, Author, ResearchService } from '../../../services/research.se
                 <span class="trigger-text">{{ getPublisherLabel() }}</span>
                 <svg class="trigger-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </div>
-              @if (false) {
-                <div></div>
-              }
             </div>
           </div>
 
           <div class="filter-item quartile-filter">
             <label>Journal Quartile</label>
-            <select class="p-select" [value]="filterQuartile" (change)="onFilterChange('quartile', $event)">
+            <select class="p-select" [value]="searchFilter.filterQuartile()" (change)="onFilterChange('quartile', $event)">
               <option value="all">All Rankings</option>
               <option value="Q1">Q1 Ranking</option>
               <option value="Q2">Q2 Ranking</option>
@@ -88,20 +87,20 @@ import { Research, Author, ResearchService } from '../../../services/research.se
         </div>
       </div>
 
-      <!-- FLOATING PUB DROPDOWN (outside p-card to escape stacking contexts) -->
+      <!-- FLOATING PUB DROPDOWN -->
       @if (pubDropdownOpen) {
         <div class="custom-dropdown-panel"
           [style.top.px]="dropdownTop"
           [style.left.px]="dropdownLeft"
           [style.width.px]="dropdownWidth"
           (mousedown)="$event.stopPropagation()">
-          <div class="dropdown-option all-option" [class.selected]="filterPublisher === 'all'" (click)="selectPublisher('all')">
+          <div class="dropdown-option all-option" [class.selected]="searchFilter.filterPublisher() === 'all'" (click)="selectPublisher('all')">
             Every Journal &amp; Conference
           </div>
-          @if (groupedPublishers.journals.length > 0) {
+          @if (groupedPublishers().journals.length > 0) {
             <div class="dropdown-group-header">JOURNALS &amp; PUBLISHERS</div>
-            @for (j of groupedPublishers.journals; track j.name) {
-              <div class="dropdown-option journal-option" [class.selected]="filterPublisher === j.name" (click)="selectPublisher(j.name)">
+            @for (j of groupedPublishers().journals; track j.name) {
+              <div class="dropdown-option journal-option" [class.selected]="searchFilter.filterPublisher() === j.name" (click)="selectPublisher(j.name)">
                 <span class="pub-name">{{ formatPublisher(j.name) }}</span>
                 @if (j.publisher) {
                   <span class="pub-meta">{{ formatPublisher(j.publisher) }}</span>
@@ -109,10 +108,10 @@ import { Research, Author, ResearchService } from '../../../services/research.se
               </div>
             }
           }
-          @if (groupedPublishers.conferences.length > 0) {
+          @if (groupedPublishers().conferences.length > 0) {
             <div class="dropdown-group-header conf-header">CONFERENCES &amp; PROCEEDINGS</div>
-            @for (c of groupedPublishers.conferences; track c.name) {
-              <div class="dropdown-option conf-option" [class.selected]="filterPublisher === c.name" (click)="selectPublisher(c.name)">
+            @for (c of groupedPublishers().conferences; track c.name) {
+              <div class="dropdown-option conf-option" [class.selected]="searchFilter.filterPublisher() === c.name" (click)="selectPublisher(c.name)">
                 <span class="pub-name conf-name">{{ formatPublisher(c.name) }}</span>
                 <span class="pub-meta conf-meta">
                   @if (c.venue) { {{ c.venue }}{{ c.year ? ', ' + c.year : '' }} }
@@ -128,7 +127,6 @@ import { Research, Author, ResearchService } from '../../../services/research.se
       <div class="p-table-wrap">
         <table class="p-table">
           <thead>
-            <tr>
             <tr>
               <th class="col-idx">#</th>
               <th style="width: 150px">
@@ -194,7 +192,7 @@ import { Research, Author, ResearchService } from '../../../services/research.se
           <tbody>
             @for (item of sortedPapers; track item.id; let i = $index) {
               <tr [class.success-highlight]="item.id === researchService.lastActionItemId()">
-                <td style="padding-left: 0.75rem; font-weight: 500; color: var(--p-text-muted);">{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+                <td style="padding-left: 0.75rem; font-weight: 500; color: var(--p-text-muted);">{{ (searchFilter.currentPage() - 1) * searchFilter.pageSize() + i + 1 }}</td>
                 <td>
                   <span class="p-badge" [attr.data-status]="item.status" style="border: 1px solid rgba(0,0,0,0.05); padding: 0.3rem 0.6rem; border-radius: 8px; font-weight: 800;">
                     {{ item.status }}
@@ -231,12 +229,10 @@ import { Research, Author, ResearchService } from '../../../services/research.se
                   <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
                     @if (item.publication) {
                       @if (item.publication.type && item.publication.type.toUpperCase().trim() === 'CONFERENCE') {
-                        <!-- ONLY SHOW VENUE FOR CONFERENCES -->
                         <span class="p-badge" style="background: #fdf2f8; color: #9d174d; font-size: 0.65rem; font-weight: 800; border: 1px solid #fce7f3;">
                           📍 {{ formatPublisher(item.publication.venue || 'NONE') }}
                         </span>
                       } @else {
-                        <!-- SHOW IF AND QUARTILE FOR JOURNALS/OTHERS -->
                         <span class="p-badge" style="background: #eff6ff; color: #1e40af; font-size: 0.65rem; font-weight: 800; border: 1px solid #dbeafe;">
                           IF: {{ (!item.publication.impactFactor || item.publication.impactFactor === '0.0' || item.publication.impactFactor === '0' || item.publication.impactFactor === '_' || item.publication.impactFactor === '-') ? '0.0' : item.publication.impactFactor }}
                         </span>
@@ -270,9 +266,6 @@ import { Research, Author, ResearchService } from '../../../services/research.se
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                         </a>
                       }
-                      <a href="javascript:void(0)" class="link-icon-zoom" data-type="Data" style="opacity: 0.4;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                      </a>
                    </div>
                 </td>
                 <td>
@@ -284,10 +277,10 @@ import { Research, Author, ResearchService } from '../../../services/research.se
                 </td>
                 <td style="text-align: center; position: sticky; right: 0; background: white; z-index: 5; border-left: 1px solid var(--p-border);">
                   <div style="display: flex; gap: 0.4rem; justify-content: center;">
-                    <button class="btn-glass" style="width: 32px; height: 32px; padding: 0;" (click)="onEdit.emit(item)">
+                    <button class="btn-glass" style="width: 32px; height: 32px; padding: 0;" (click)="onEdit(item)">
                       <span style="font-size: 0.85rem;">✏️</span>
                     </button>
-                    <button class="btn-glass icon-danger" style="width: 32px; height: 32px; padding: 0;" (click)="onDelete.emit(item.id!)">
+                    <button class="btn-glass icon-danger" style="width: 32px; height: 32px; padding: 0;" (click)="onDelete(item.id!)">
                       <span style="font-size: 0.85rem;">🗑</span>
                     </button>
                   </div>
@@ -307,32 +300,32 @@ import { Research, Author, ResearchService } from '../../../services/research.se
       </div>
 
       <!-- PAGINATION -->
-      @if (totalFilteredCount > 0) {
+      @if (filterResults.filteredPapers().length > 0) {
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 1rem;">
           <div style="font-size: 0.9rem; font-weight: 700; color: var(--p-text-muted);">
-            Displaying <span style="color: var(--p-accent);">{{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalFilteredCount) }}</span> of <b>{{ totalFilteredCount }}</b> Project Records
+            Displaying <span style="color: var(--p-accent);">{{ (searchFilter.currentPage() - 1) * searchFilter.pageSize() + 1 }}-{{ Math.min(searchFilter.currentPage() * searchFilter.pageSize(), filterResults.filteredPapers().length) }}</span> of <b>{{ filterResults.filteredPapers().length }}</b> Project Records
           </div>
 
-          @if (totalPages > 1) {
+          @if (filterResults.totalPages() > 1) {
             <div style="display: flex; gap: 0.75rem; align-items: center;">
-              <button class="btn-glass" style="width: 44px; height: 44px; padding: 0;" [disabled]="currentPage === 1" (click)="onPageChange.emit(currentPage - 1)">‹</button>
-              @for (p of pages; track p) {
-                <button class="btn-glass" [class.active-page]="p === currentPage" 
-                        [style.background]="p === currentPage ? 'var(--p-accent)' : 'white'" 
-                        [style.color]="p === currentPage ? 'white' : 'inherit'" 
-                        [style.box-shadow]="p === currentPage ? 'var(--p-shadow)' : 'none'"
+              <button class="btn-glass" style="width: 44px; height: 44px; padding: 0;" [disabled]="searchFilter.currentPage() === 1" (click)="onPageChange(searchFilter.currentPage() - 1)">‹</button>
+              @for (p of pages(); track p) {
+                <button class="btn-glass" [class.active-page]="p === searchFilter.currentPage()" 
+                        [style.background]="p === searchFilter.currentPage() ? 'var(--p-accent)' : 'white'" 
+                        [style.color]="p === searchFilter.currentPage() ? 'white' : 'inherit'" 
+                        [style.box-shadow]="p === searchFilter.currentPage() ? 'var(--p-shadow)' : 'none'"
                         [style.cursor]="p === -1 ? 'default' : 'pointer'"
                         style="width: 44px; height: 44px; padding: 0; font-weight: 800;"
                         [disabled]="p === -1"
-                        (click)="p !== -1 && onPageChange.emit(p)">
+                        (click)="p !== -1 && onPageChange(p)">
                   {{ p === -1 ? '...' : p }}
                 </button>
               }
-              <button class="btn-glass" style="width: 44px; height: 44px; padding: 0;" [disabled]="currentPage === totalPages" (click)="onPageChange.emit(currentPage + 1)">›</button>
+              <button class="btn-glass" style="width: 44px; height: 44px; padding: 0;" [disabled]="searchFilter.currentPage() === filterResults.totalPages()" (click)="onPageChange(searchFilter.currentPage() + 1)">›</button>
             </div>
           }
 
-          <button class="btn-glass" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); font-size: 0.8rem; font-weight: 800;" (click)="onClearDatabase.emit()">
+          <button class="btn-glass" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.2); font-size: 0.8rem; font-weight: 800;" (click)="onClearDatabase()">
             ⚠️ RESET DATABASE
           </button>
         </div>
@@ -471,33 +464,81 @@ import { Research, Author, ResearchService } from '../../../services/research.se
   `]
 })
 export class ArchiveTabComponent {
-  public researchService: ResearchService = inject(ResearchService);
-  private _papers: Research[] = [];
-  @Input() set papers(value: Research[]) {
-    this._papers = value;
-  }
-  get papers() { return this._papers; }
+  public researchService = inject(ResearchService);
+  public searchFilter = inject(SearchFilterService);
+  private dashboard = inject(DashboardComponent);
 
-  @Input() totalPapersCount: number = 0;
-  @Input() totalFilteredCount: number = 0;
-  @Input() currentPage: number = 1;
-  @Input() pageSize: number = 20;
-  @Input() totalPages: number = 0;
-  @Input() pages: number[] = [];
+  public filterResults = this.searchFilter.getFilteredResults(this.researchService.researchItems);
 
-  @Input() filterStatus: string = 'all';
-  @Input() filterType: string = 'all';
-  @Input() filterYear: string = 'all';
-  @Input() filterPublisher: string = 'all';
-  @Input() filterQuartile: string = 'all';
+  pages = computed(() => {
+    const current = this.searchFilter.currentPage();
+    const total = this.filterResults.totalPages();
+    const arr: number[] = [];
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) arr.push(i);
+    } else {
+      if (current <= 4) {
+        arr.push(1, 2, 3, 4, 5, -1, total);
+      } else if (current >= total - 3) {
+        arr.push(1, -1, total - 4, total - 3, total - 2, total - 1, total);
+      } else {
+        arr.push(1, -1, current - 1, current, current + 1, -1, total);
+      }
+    }
+    return arr;
+  });
 
-  @Input() availableTypes: string[] = [];
-  @Input() availableYears: string[] = [];
-  @Input() availablePublishers: string[] = [];
-  @Input() groupedPublishers: {
-    journals: { name: string; publisher: string }[];
-    conferences: { name: string; venue: string; year: string }[];
-  } = { journals: [], conferences: [] };
+  availableTypes = computed(() => {
+    const types = new Set<string>();
+    this.researchService.researchItems().forEach(i => {
+      if (i.publication?.type) types.add(i.publication.type.toUpperCase().trim());
+    });
+    return Array.from(types).sort();
+  });
+
+  availableYears = computed(() => {
+    const years = new Set<string>();
+    this.researchService.researchItems().forEach(i => {
+      if (i.publication?.year) {
+        const y = String(i.publication.year).trim();
+        if (y && y !== 'NONE' && y !== 'N/A') years.add(y);
+      }
+    });
+    return Array.from(years).sort().reverse();
+  });
+
+  groupedPublishers = computed(() => {
+    const journals = new Map<string, { name: string, publisher: string }>();
+    const conferences = new Map<string, { name: string, venue: string, year: string }>();
+
+    this.researchService.researchItems().forEach(i => {
+      if (!i.publication || !i.publication.name) return;
+      const name = i.publication.name.trim();
+      if (!name) return;
+
+      if (i.publication.type && i.publication.type.toUpperCase().includes('CONFERENCE')) {
+        if (!conferences.has(name)) {
+          conferences.set(name, {
+            name: name,
+            venue: i.publication.venue || '',
+            year: i.publication.year || ''
+          });
+        }
+      } else {
+        if (!journals.has(name)) {
+          journals.set(name, {
+            name: name,
+            publisher: i.publication.publisher || ''
+          });
+        }
+      }
+    });
+
+    return {
+      journals: Array.from(journals.values()).sort((a, b) => a.name.localeCompare(b.name)),
+      conferences: Array.from(conferences.values()).sort((a, b) => a.name.localeCompare(b.name))
+    };
+  });
 
   @ViewChild('pubTrigger') pubTriggerRef!: ElementRef;
 
@@ -536,31 +577,60 @@ export class ArchiveTabComponent {
   }
 
   selectPublisher(val: string) {
-    this.filterChange.emit({ key: 'publisher', value: val });
+    this.searchFilter.filterPublisher.set(val);
+    this.searchFilter.currentPage.set(1);
     this.pubDropdownOpen = false;
   }
 
   getPublisherLabel(): string {
-    if (this.filterPublisher === 'all') return 'Every Journal & Conference';
-    const j = this.groupedPublishers.journals.find(x => x.name === this.filterPublisher);
+    const pubFilter = this.searchFilter.filterPublisher();
+    if (pubFilter === 'all') return 'Every Journal & Conference';
+    const j = this.groupedPublishers().journals.find(x => x.name === pubFilter);
     if (j) return j.publisher ? `${this.formatPublisher(j.name)} — ${this.formatPublisher(j.publisher)}` : this.formatPublisher(j.name);
-    const c = this.groupedPublishers.conferences.find(x => x.name === this.filterPublisher);
+    const c = this.groupedPublishers().conferences.find(x => x.name === pubFilter);
     if (c) {
       const parts = [this.formatPublisher(c.name)];
       if (c.venue) parts.push(c.venue);
       if (c.year) parts.push(c.year);
       return parts.join(', ');
     }
-    return this.formatPublisher(this.filterPublisher);
+    return this.formatPublisher(pubFilter);
   }
 
-  @Output() filterChange = new EventEmitter<{ key: string, value: string }>();
-  @Output() onPageChange = new EventEmitter<number>();
-  @Output() onEdit = new EventEmitter<Research>();
-  @Output() onDelete = new EventEmitter<number>();
-  @Output() onSyncPublic = new EventEmitter<void>();
-  @Output() onClearFilters = new EventEmitter<void>();
-  @Output() onClearDatabase = new EventEmitter<void>();
+  onFilterChange(key: string, event: any) {
+    const value = event.target.value;
+    if (key === 'status') this.searchFilter.filterStatus.set(value);
+    if (key === 'type') this.searchFilter.filterType.set(value);
+    if (key === 'year') this.searchFilter.filterYear.set(value);
+    if (key === 'quartile') this.searchFilter.filterQuartile.set(value);
+    this.searchFilter.currentPage.set(1);
+  }
+
+  onPageChange(page: number) {
+    this.searchFilter.currentPage.set(page);
+  }
+
+  onClearFilters() {
+    this.searchFilter.clearFilters();
+  }
+
+  onEdit(item: Research) {
+    this.dashboard.itemToEdit.set(item);
+    this.dashboard.showModal.set(true);
+  }
+
+  onDelete(id: number) {
+    this.dashboard.confirmDeleteId.set(id);
+  }
+
+  onClearDatabase() {
+    this.dashboard.showBulkConfirm.set(true);
+  }
+
+  onSyncPublic() {
+    this.dashboard.showSuccess('Database synced with public repository.');
+    console.log('Sync public requested');
+  }
 
   protected readonly Math = Math;
 
@@ -578,7 +648,7 @@ export class ArchiveTabComponent {
   }
 
   get sortedPapers() {
-    return [...this.papers].sort((a, b) => {
+    return [...this.filterResults.paginatedPapers()].sort((a, b) => {
       let valA = this.resolveValue(a, this.sortField);
       let valB = this.resolveValue(b, this.sortField);
 
@@ -636,13 +706,10 @@ export class ArchiveTabComponent {
     return path.split('.').reduce((obj, key) => (obj && obj[key] !== undefined) ? obj[key] : null, item);
   }
 
-  onFilterChange(key: string, event: any) {
-    this.filterChange.emit({ key, value: event.target.value });
-  }
-
   getAuthorList(item: Research): string {
     return (item.authors || []).map(a => a.name).join(', ');
   }
+
   formatPublisher(name: string): string {
     if (!name) return '';
     const acronyms = new Set(['ICCIT', 'ICECTE', 'ICEFRONT', 'PECCII', 'QPAIN', 'IEEE', 'ACM', 'SN', 'MDPI', 'IUBAT']);

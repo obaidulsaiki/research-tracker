@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, inject, OnInit } from '@angular/core';
+import { Component, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SettingsService, SystemSettings } from '../../../services/settings.service';
+import { ResearchService } from '../../../services/research.service';
 
 @Component({
   selector: 'app-download-tab',
@@ -18,9 +19,9 @@ import { SettingsService, SystemSettings } from '../../../services/settings.serv
             Download your entire archive as a spreadsheet optimized for Microsoft Excel and advanced analysis.
           </p>
           <div class="export-meta">
-            <span class="p-badge count-badge">{{ itemCount }} Total Records</span>
+            <span class="p-badge count-badge">{{ itemCount() }} Total Records</span>
           </div>
-          <button class="btn-vibrant export-btn" (click)="onExcel.emit()">Generate XLSX</button>
+          <button class="btn-vibrant export-btn" (click)="researchService.exportExcel()">Generate XLSX</button>
         </div>
 
         <!-- PDF DOWNLOAD -->
@@ -33,7 +34,7 @@ import { SettingsService, SystemSettings } from '../../../services/settings.serv
           <div class="export-meta">
             <span class="p-badge premium-badge">Premium Layout</span>
           </div>
-          <button class="btn-vibrant export-btn" (click)="onPdf.emit()">Download Portfolio</button>
+          <button class="btn-vibrant export-btn" (click)="researchService.exportPdf()">Download Portfolio</button>
         </div>
 
         <!-- CSV DOWNLOAD -->
@@ -46,7 +47,7 @@ import { SettingsService, SystemSettings } from '../../../services/settings.serv
           <div class="export-meta">
             <span class="p-badge legacy-badge">Legacy Support</span>
           </div>
-          <button class="btn-glass export-btn" (click)="onCsv.emit()">Download CSV</button>
+          <button class="btn-glass export-btn" (click)="researchService.exportCsv()">Download CSV</button>
         </div>
 
         <!-- BACKUP SETTINGS -->
@@ -171,12 +172,10 @@ import { SettingsService, SystemSettings } from '../../../services/settings.serv
   `]
 })
 export class DownloadTabComponent implements OnInit {
-  @Input() itemCount: number = 0;
-  @Output() onExcel = new EventEmitter<void>();
-  @Output() onPdf = new EventEmitter<void>();
-  @Output() onCsv = new EventEmitter<void>();
-
+  public researchService = inject(ResearchService);
   protected settingsService = inject(SettingsService);
+
+  public itemCount = computed(() => this.researchService.researchItems().length);
 
   ngOnInit() {
     this.settingsService.loadSettings();
@@ -203,3 +202,4 @@ export class DownloadTabComponent implements OnInit {
     return new Date(dateStr).toLocaleString();
   }
 }
+

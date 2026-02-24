@@ -10,60 +10,7 @@
         </app-dashboard-header>
 
         <div class="app-content">
-            @if (activeTab() === 'overview') {
-            <app-overview-tab [stats]="mainStats()" [history]="recentHistory()" [activityData]="activityData()"
-                [settings]="sysSettings()" (viewAllHistory)="activeTab.set('history')"
-                (statClick)="onStatFilterChange($event)"
-                (onUpdateSettings)="settingsService.updateSettings($event).subscribe()"
-                (exploreDeadlines)="activeTab.set('deadlines')">
-            </app-overview-tab>
-            }
-
-            @if (activeTab() === 'archive' || activeTab() === 'running' || activeTab() === 'hypothesis') {
-            <app-archive-tab [papers]="paginatedPapers()" [totalPapersCount]="researchItems().length"
-                [totalFilteredCount]="filteredPapers().length" [currentPage]="currentPage()" [pageSize]="pageSize()"
-                [totalPages]="totalPages()" [pages]="pages()" [filterStatus]="filterStatus()"
-                [filterType]="filterType()" [filterYear]="filterYear()" [filterPublisher]="filterPublisher()"
-                [filterQuartile]="filterQuartile()" [availableTypes]="availableTypes" [availableYears]="availableYears"
-                [availablePublishers]="availablePublishers" [groupedPublishers]="groupedPublishers"
-                (filterChange)="onTabFilterChange($event)" (onPageChange)="currentPage.set($event)"
-                (onEdit)="openEditModal($event)" (onDelete)="deleteItem($event)" (onSyncPublic)="syncPublicProfile()"
-                (onClearFilters)="clearFilters()" (onClearDatabase)="showBulkConfirm.set(true)">
-            </app-archive-tab>
-            }
-
-            @if (activeTab() === 'analytics') {
-            <app-analytics-tab [totalCount]="researchItems().length" [typeDist]="typeDistribution()"
-                [positionDist]="positionDistribution()" [statusDist]="statusDistribution()"
-                [quartileDist]="quartileDistribution()">
-            </app-analytics-tab>
-            }
-
-            @if (activeTab() === 'history') {
-            <app-history-tab [groupedHistory]="groupedHistory()" [totalEvents]="history().length"
-                [researchItems]="researchItems()">
-            </app-history-tab>
-            }
-
-            @if (activeTab() === 'authors') {
-            <app-authors-tab [coAuthors]="coAuthorStats()" (viewAuthor)="viewAuthor($event)"></app-authors-tab>
-            }
-
-            @if (activeTab() === 'author-detail') {
-            <app-author-detail [authorName]="selectedAuthor() || ''" [allPapers]="researchItems()"
-                (back)="backToAuthors()" (filterReset)="showSuccess('Filters reset to show all papers')">
-            </app-author-detail>
-            }
-
-            @if (activeTab() === 'download') {
-            <app-download-tab [itemCount]="researchItems().length" (onExcel)="exportToExcel()" (onPdf)="exportToPdf()"
-                (onCsv)="exportData()">
-            </app-download-tab>
-            }
-
-            @if (activeTab() === 'deadlines') {
-            <app-deadlines-tab></app-deadlines-tab>
-            }
+            <router-outlet></router-outlet>
         </div>
     </main>
 

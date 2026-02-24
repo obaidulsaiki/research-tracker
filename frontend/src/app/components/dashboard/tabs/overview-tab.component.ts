@@ -1,7 +1,8 @@
-import { Component, Input, Output, EventEmitter, inject, computed, OnInit } from '@angular/core';
+import { Component, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SystemSettings } from '../../../services/settings.service';
+import { Router } from '@angular/router';
+import { SystemSettings, SettingsService } from '../../../services/settings.service';
 import { ResearchService } from '../../../services/research.service';
 import { ConferenceService, Conference } from '../../../services/conference.service';
 
@@ -13,8 +14,8 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
     <section class="overview-container animate-reveal">
       <!-- STATS VISUALIZATION -->
       <div class="stat-grid">
-         @for (stat of stats; track stat.label) {
-           <div class="p-card stat-item interactive" (click)="statClick.emit(stat.label)">
+         @for (stat of mainStats(); track stat.label) {
+           <div class="p-card stat-item interactive" (click)="onStatClick(stat.label)">
              <div class="stat-bubble">
                 {{ getStatIcon(stat.label) }}
              </div>
@@ -40,10 +41,10 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
               <p class="chart-subtitle">Precision tracking against your academic goals</p>
             </div>
             
-            @if (settings) {
+            @if (settings()) {
               <div class="goal-setter">
                 <span class="goal-label">Daily Goal:</span>
-                <select [ngModel]="settings.dailyResearchGoal" (ngModelChange)="updateGoal(settings, $event)" class="goal-select">
+                <select [ngModel]="settings()?.dailyResearchGoal" (ngModelChange)="updateGoal(settings(), $event)" class="goal-select">
                   @for (g of [4, 6, 8, 10, 12]; track g) {
                     <option [ngValue]="g">{{ g }}h</option>
                   }
@@ -51,19 +52,19 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
               </div>
             }
 
-            <button class="btn-glass audit-btn" (click)="viewAllHistory.emit()">Full Audit Log</button>
+            <button class="btn-glass audit-btn" (click)="viewAllHistory()">Full Audit Log</button>
           </div>
           
           <!-- ANALYTICS VISUALIZER -->
-          @if (settings) {
+          @if (settings()) {
             <div class="visualizer">
-                @for (h of activityData; track $index) {
+                @for (h of activityData(); track $index) {
                   <div class="bar-container">
                     <div class="bar" 
                          [style.height.%]="(Math.max(h || 0, 0.5) / 12) * 100"
-                         [class.goal-met]="h >= settings.dailyResearchGoal">
+                         [class.goal-met]="h >= settings()!.dailyResearchGoal">
                       <div class="bar-value">{{ h > 0 ? h.toFixed(1) : h }}h</div>
-                      @if (h >= settings.dailyResearchGoal) {
+                      @if (h >= settings()!.dailyResearchGoal) {
                         <div class="success-star">✨</div>
                       }
                     </div>
@@ -74,8 +75,8 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
                    </div>
                 }
                 <!-- DYNAMIC BASELINE -->
-                <div class="baseline" [style.bottom.%]="(settings.dailyResearchGoal / 12) * 100">
-                  <span class="baseline-tag">{{ settings.dailyResearchGoal }}h TARGET</span>
+                <div class="baseline" [style.bottom.%]="(settings()!.dailyResearchGoal / 12) * 100">
+                  <span class="baseline-tag">{{ settings()!.dailyResearchGoal }}h TARGET</span>
                 </div>
             </div>
           } @else {
@@ -133,7 +134,7 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
             }
           </div>
           
-          <button class="btn-glass full-width" style="margin-top: auto;" (click)="exploreDeadlines.emit()">Manage All Milestones</button>
+          <button class="btn-glass full-width" style="margin-top: auto;" (click)="exploreDeadlines()">Manage All Milestones</button>
         </div>
 
         <!-- RECENT ACTIVITY FEED -->
@@ -141,7 +142,7 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
           <h3 class="activity-title">Recent Stream</h3>
           
           <div class="activity-feed">
-            @for (item of history | slice:0:5; track item.id) {
+            @for (item of recentHistory(); track item.id) {
               <div class="feed-item" [class.latest]="$first">
                 <div class="feed-dot"></div>
                 @if (!$last) {
@@ -350,31 +351,62 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
   `]
 })
 export class OverviewTabComponent implements OnInit {
-  @Input() stats: any[] = [];
-  @Input() history: any[] = [];
-  @Input() activityData: number[] = [];
-  @Input() settings: SystemSettings | null = null;
 
-  @Output() viewAllHistory = new EventEmitter<void>();
-  @Output() statClick = new EventEmitter<string>();
-  @Output() onUpdateSettings = new EventEmitter<SystemSettings>();
-  @Output() exploreDeadlines = new EventEmitter<void>();
-
+  private router = inject(Router);
   private researchService = inject(ResearchService);
+  private settingsService = inject(SettingsService);
   private conferenceService = inject(ConferenceService);
   protected readonly Math = Math;
 
-  ngOnInit() {
-    // Load conferences if empty to populate the Radar
-    if (this.conferenceService.conferences().length === 0) {
-      this.conferenceService.loadAll();
+  // Derive State Localized
+  researchItems = this.researchService.researchItems;
+  history = this.researchService.history;
+  settings = computed(() => this.settingsService.settings() || {
+    dailyResearchGoal: 8,
+    autoBackupEnabled: false,
+    backupIntervalHours: 24
+  });
+
+  mainStats = computed(() => {
+    const items = this.researchItems();
+    return [
+      { label: 'Total Papers', value: items.length },
+      { label: 'Published', value: items.filter(i => i.status === 'PUBLISHED').length },
+      { label: 'Accepted', value: items.filter(i => i.status === 'ACCEPTED').length },
+      { label: 'Running', value: items.filter(i => i.status === 'RUNNING').length },
+      { label: 'Hypothesis', value: items.filter(i => i.status === 'HYPOTHESIS').length },
+      { label: 'Working', value: items.filter(i => i.status === 'WORKING').length }
+    ];
+  });
+
+  recentHistory = computed(() => {
+    return this.history().slice(0, 5);
+  });
+
+  activityData = computed(() => {
+    const entries = this.history();
+    const last7Days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+
+      const count = entries.filter(e => {
+        if (!e.timestamp) return false;
+        const entryDate = new Date(e.timestamp);
+        return entryDate.getFullYear() === d.getFullYear() &&
+          entryDate.getMonth() === d.getMonth() &&
+          entryDate.getDate() === d.getDate();
+      }).length;
+      last7Days.push(Math.min(count * 2.5, 12));
     }
-  }
+    return last7Days;
+  });
 
   upcomingMilestones = computed(() => {
     const conferences = this.conferenceService.conferences();
     const allMilestones: any[] = [];
-
     conferences.forEach(c => {
       this.addIfValid(allMilestones, 'Initial Submission', c.shortName || 'Conf', 'Submission', c.submissionDeadline);
       this.addIfValid(allMilestones, 'Notification', c.shortName || 'Conf', 'Notification', c.notificationDate);
@@ -382,11 +414,36 @@ export class OverviewTabComponent implements OnInit {
       this.addIfValid(allMilestones, 'Early Registration', c.shortName || 'Conf', 'Registration', c.registrationDeadline);
       this.addIfValid(allMilestones, 'Event Start', c.shortName || 'Conf', 'Conference', c.conferenceDate);
     });
-
     return allMilestones
       .filter(ms => ms.daysLeft >= 0)
       .sort((a, b) => a.daysLeft - b.daysLeft);
   });
+
+  ngOnInit() {
+    if (this.conferenceService.conferences().length === 0) {
+      this.conferenceService.loadAll();
+    }
+  }
+
+  viewAllHistory() {
+    this.router.navigate(['/history']);
+  }
+
+  exploreDeadlines() {
+    this.router.navigate(['/deadlines']);
+  }
+
+  onStatClick(label: string) {
+    const l = label.toLowerCase();
+    let status = 'ALL';
+    if (l.includes('published')) status = 'PUBLISHED';
+    else if (l.includes('accepted')) status = 'ACCEPTED';
+    else if (l.includes('running')) status = 'RUNNING';
+    else if (l.includes('hypothesis')) status = 'HYPOTHESIS';
+    else if (l.includes('working')) status = 'WORKING';
+
+    this.router.navigate(['/research-list', status]);
+  }
 
   private addIfValid(list: any[], title: string, venue: string, type: string, date: string | undefined) {
     if (!date) return;
@@ -414,8 +471,9 @@ export class OverviewTabComponent implements OnInit {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  updateGoal(s: SystemSettings, goal: number) {
+  updateGoal(s: SystemSettings | null | undefined, goal: number) {
+    if (!s) return;
     const updated = { ...s, dailyResearchGoal: goal };
-    this.onUpdateSettings.emit(updated);
+    this.settingsService.updateSettings(updated).subscribe();
   }
 }
