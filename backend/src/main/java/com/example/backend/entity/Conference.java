@@ -29,11 +29,11 @@ public class Conference {
     private String platformLink;
     private String platformName; // EasyChair, CMT, OpenReview, etc.
 
-    private java.time.LocalDate submissionDeadline;
-    private java.time.LocalDate notificationDate;
-    private java.time.LocalDate cameraReadyDeadline;
-    private java.time.LocalDate registrationDeadline;
-    private java.time.LocalDate conferenceDate;
+    private LocalDate submissionDeadline;
+    private LocalDate notificationDate;
+    private LocalDate cameraReadyDeadline;
+    private LocalDate registrationDeadline;
+    private LocalDate conferenceDate;
 
     @OneToMany(mappedBy = "conference")
     @JsonIgnore

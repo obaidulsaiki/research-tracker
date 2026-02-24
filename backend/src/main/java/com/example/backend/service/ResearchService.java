@@ -95,7 +95,7 @@ public class ResearchService {
                 Conference bestMatch = matches.get(0);
                 if (pubYear != null) {
                     for (Conference m : matches) {
-                        if (pubYear.equals(m.getYear())) {
+                        if (pubYear.equals(String.valueOf(m.getYear()))) {
                             bestMatch = m;
                             break;
                         }
