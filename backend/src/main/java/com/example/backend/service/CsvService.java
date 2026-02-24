@@ -233,7 +233,7 @@ public class CsvService {
                 continue;
             author.setName(cleanName);
             author.setRole("Author");
-            author.setContributionPercentage(authors.size() + 1);
+            author.setAuthorOrder(authors.size() + 1);
             authors.add(author);
         }
         return authors;

@@ -1,22 +1,20 @@
 package com.example.backend.entity.research;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
-@Data
+@Table(name = "authors", uniqueConstraints = { @UniqueConstraint(columnNames = "name") })
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Author {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     private String name;
-    private String role;
-    private double contributionPercentage;
-
-    @ManyToOne
-    @JoinColumn(name = "research_id")
-    @JsonBackReference
-    private Research research;
 }

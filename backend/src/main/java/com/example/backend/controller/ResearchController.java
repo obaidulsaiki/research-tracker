@@ -6,8 +6,10 @@ import com.example.backend.repository.ResearchRepo;
 import com.example.backend.service.CsvService;
 import com.example.backend.service.JournalService;
 import com.example.backend.service.MetadataService;
+import com.example.backend.service.ExcelService;
+import com.example.backend.service.PdfService;
 import com.example.backend.service.ResearchService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,23 +20,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/research")
-@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class ResearchController {
 
-    @Autowired
-    private ResearchService researchService;
-
-    @Autowired
-    private ResearchRepo researchRepo;
-
-    @Autowired
-    private CsvService csvService;
-
-    @Autowired
-    private MetadataService metadataService;
-
-    @Autowired
-    private JournalService journalService;
+    private final ResearchService researchService;
+    private final ResearchRepo researchRepo;
+    private final CsvService csvService;
+    private final MetadataService metadataService;
+    private final JournalService journalService;
+    private final ExcelService excelService;
+    private final PdfService pdfService;
 
     @GetMapping("/journal-lookup")
     public ResponseEntity<?> lookupJournal(@RequestParam String name) {
@@ -105,12 +100,29 @@ public class ResearchController {
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> export() throws Exception {
-        // CsvService might need update or we convert DTOs back to Entities for it
-        // Let's assume CsvService is updated or we convert here
         byte[] data = csvService.exportToCsv(researchService.getAll());
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=research_portfolio.csv")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(data);
+    }
+
+    @GetMapping("/export/excel")
+    public ResponseEntity<byte[]> exportExcel() throws Exception {
+        byte[] data = excelService.exportToExcel(researchService.getAll());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=research_portfolio.xlsx")
+                .contentType(
+                        MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(data);
+    }
+
+    @GetMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportPdf() throws Exception {
+        byte[] data = pdfService.exportToPdf(researchService.getAll());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=research_portfolio.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
                 .body(data);
     }
 

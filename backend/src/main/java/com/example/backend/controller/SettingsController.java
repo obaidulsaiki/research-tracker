@@ -1,35 +1,28 @@
 package com.example.backend.controller;
 
 import com.example.backend.entity.SystemSettings;
-import com.example.backend.repository.SystemSettingsRepo;
+
 import com.example.backend.service.BackupService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.backend.service.SettingsService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/settings")
-@CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class SettingsController {
 
-    @Autowired
-    private SystemSettingsRepo settingsRepo;
-
-    @Autowired
-    private BackupService backupService;
+    private final SettingsService settingsService;
+    private final BackupService backupService;
 
     @GetMapping
     public SystemSettings getSettings() {
-        return settingsRepo.getSettings();
+        return settingsService.getSettings();
     }
 
     @PostMapping
     public SystemSettings updateSettings(@RequestBody SystemSettings newSettings) {
-        SystemSettings existing = settingsRepo.getSettings();
-        existing.setAutoBackupEnabled(newSettings.isAutoBackupEnabled());
-        existing.setBackupIntervalHours(newSettings.getBackupIntervalHours());
-        existing.setDailyResearchGoal(newSettings.getDailyResearchGoal());
-        // lastBackupTime is managed by the service
-        return settingsRepo.save(existing);
+        return settingsService.updateSettings(newSettings);
     }
 
     @PostMapping("/trigger-backup")

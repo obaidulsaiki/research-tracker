@@ -3,8 +3,8 @@ package com.example.backend.service;
 import com.example.backend.entity.research.Publication;
 import com.example.backend.entity.research.Research;
 import com.example.backend.repository.ResearchRepo;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,13 +16,11 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class DataMigrationService {
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
-    private ResearchRepo researchRepo;
+    private final JdbcTemplate jdbcTemplate;
+    private final ResearchRepo researchRepo;
 
     @EventListener(ApplicationReadyEvent.class)
     @Transactional

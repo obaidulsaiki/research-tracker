@@ -30,6 +30,10 @@ public class ResearchDTO {
     private String abstractText;
 
     private String notes;
+
+    private ConferenceDTO conference;
+    private List<CameraReadyTaskDTO> checklist = new ArrayList<>();
+
     @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate submissionDate;
     @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd")

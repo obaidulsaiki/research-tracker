@@ -2,7 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.entity.research.Research;
 import com.example.backend.repository.ResearchRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class AnalyticsService {
 
-        @Autowired
-        private ResearchRepo researchRepo;
+        private final ResearchRepo researchRepo;
 
         public Map<String, Object> getAnalytics() {
                 List<Research> all = researchRepo.findAll();

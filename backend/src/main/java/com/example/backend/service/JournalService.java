@@ -8,7 +8,7 @@ import com.example.backend.repository.JournalMetadataRepo;
 import com.example.backend.repository.ConferenceMetadataRepo;
 import com.example.backend.config.JournalSeedData;
 import com.example.backend.config.ConferenceSeedData;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,19 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class JournalService implements CommandLineRunner {
 
         private final JournalMetadataRepo journalRepo;
         private final ConferenceMetadataRepo conferenceRepo;
-        private final SmartScraperService scraperService;
-
-        @Autowired
-        public JournalService(JournalMetadataRepo journalRepo, ConferenceMetadataRepo conferenceRepo,
-                        SmartScraperService scraperService) {
-                this.journalRepo = journalRepo;
-                this.conferenceRepo = conferenceRepo;
-                this.scraperService = scraperService;
-        }
 
         @Override
         public void run(String... args) throws Exception {
@@ -145,15 +137,6 @@ public class JournalService implements CommandLineRunner {
                                                 .url(record.url)
                                                 .build());
                         }
-                }
-
-                // 4. FINAL FALLBACK: Smart Scraper
-                System.out.println("METADATA LOOKUP: No local match. Triggering Smart Scraper for '" + search + "'...");
-                JournalMetadataDTO scraped = scraperService.scrape(search);
-                if (scraped != null) {
-                        addJournal(scraped.getName(), scraped.getPublisher(), scraped.getImpactFactor(),
-                                        scraped.getQuartile(), scraped.getUrl(), 2024, false);
-                        return Optional.of(scraped);
                 }
 
                 return Optional.empty();

@@ -15,7 +15,7 @@ export interface SystemSettings {
 })
 export class SettingsService {
     private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8080/api/settings';
+    private apiUrl = '/api/settings';
 
     settings = signal<SystemSettings | null>(null);
 

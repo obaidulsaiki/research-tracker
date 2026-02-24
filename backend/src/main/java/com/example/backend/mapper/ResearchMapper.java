@@ -1,22 +1,31 @@
 package com.example.backend.mapper;
 
-import com.example.backend.dto.AuthorDTO;
-import com.example.backend.dto.HistoryEntryDTO;
-import com.example.backend.dto.PublicationDTO;
-import com.example.backend.dto.ResearchDTO;
-import com.example.backend.entity.research.Author;
+import com.example.backend.dto.*;
+import com.example.backend.entity.Conference;
+import com.example.backend.entity.research.AuthorResearch;
 import com.example.backend.entity.research.HistoryEntry;
 import com.example.backend.entity.research.Publication;
 import com.example.backend.entity.research.Research;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
+import com.example.backend.service.ChecklistService;
+import lombok.RequiredArgsConstructor;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class ResearchMapper {
 
+    private final ChecklistService checklistService;
+
     public ResearchDTO convertToDTO(Research r) {
+        return convertToDTO(r, true);
+    }
+
+    public ResearchDTO convertToDTO(Research r, boolean includeConference) {
         ResearchDTO dto = new ResearchDTO();
         dto.setId(r.getId());
         dto.setStatus(r.getStatus());
@@ -39,6 +48,48 @@ public class ResearchMapper {
         dto.setSubmissionDate(r.getSubmissionDate());
         dto.setDecisionDate(r.getDecisionDate());
         dto.setPublicationDate(r.getPublicationDate());
+
+        // Populate checklist
+        if (r.getId() != null) {
+            dto.setChecklist(checklistService.getChecklist(r.getId()));
+        }
+
+        if (includeConference && r.getConference() != null) {
+            dto.setConference(convertToConferenceDTO(r.getConference(), false));
+        }
+
+        return dto;
+    }
+
+    public ConferenceDTO convertToConferenceDTO(Conference c) {
+        return convertToConferenceDTO(c, true);
+    }
+
+    public ConferenceDTO convertToConferenceDTO(Conference c, boolean includePapers) {
+        ConferenceDTO dto = ConferenceDTO.builder()
+                .id(c.getId())
+                .name(c.getName())
+                .shortName(c.getShortName())
+                .year(c.getYear())
+                .publisher(c.getPublisher())
+                .portalLink(c.getPortalLink())
+                .platformLink(c.getPlatformLink())
+                .platformName(c.getPlatformName())
+                .submissionDeadline(c.getSubmissionDeadline())
+                .notificationDate(c.getNotificationDate())
+                .cameraReadyDeadline(c.getCameraReadyDeadline())
+                .registrationDeadline(c.getRegistrationDeadline())
+                .conferenceDate(c.getConferenceDate())
+                .build();
+
+        if (includePapers && c.getPapers() != null) {
+            dto.setPapers(c.getPapers().stream()
+                    .map(p -> convertToDTO(p, false))
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setPapers(new java.util.ArrayList<>());
+        }
+
         return dto;
     }
 
@@ -56,12 +107,14 @@ public class ResearchMapper {
         return dto;
     }
 
-    public AuthorDTO convertToAuthorDTO(Author a) {
+    public AuthorDTO convertToAuthorDTO(AuthorResearch ar) {
         AuthorDTO dto = new AuthorDTO();
-        dto.setId(a.getId());
-        dto.setName(a.getName());
-        dto.setRole(a.getRole());
-        dto.setContributionPercentage(a.getContributionPercentage());
+        if (ar.getAuthor() != null) {
+            dto.setId(ar.getAuthor().getId());
+            dto.setName(ar.getAuthor().getName());
+        }
+        dto.setRole(ar.getRole());
+        dto.setAuthorOrder(ar.getAuthorOrder());
         return dto;
     }
 
@@ -114,7 +167,17 @@ public class ResearchMapper {
         r.setTitle(dto.getTitle());
         r.setAuthorPlace(dto.getAuthorPlace());
         if (dto.getAuthors() != null) {
-            r.setAuthors(dto.getAuthors().stream().map(this::convertToAuthorEntity).collect(Collectors.toList()));
+            java.util.List<AuthorResearch> authorEntities = new ArrayList<>();
+            for (int i = 0; i < dto.getAuthors().size(); i++) {
+                AuthorDTO authorDto = dto.getAuthors().get(i);
+                AuthorResearch ar = convertToAuthorResearchEntity(authorDto);
+                ar.setResearch(r);
+                if (ar.getAuthorOrder() == null) {
+                    ar.setAuthorOrder(i + 1);
+                }
+                authorEntities.add(ar);
+            }
+            r.setAuthors(authorEntities);
         }
         if (dto.getPublication() != null) {
             r.setPublication(convertToPublicationEntity(dto.getPublication()));
@@ -131,7 +194,26 @@ public class ResearchMapper {
         r.setSubmissionDate(dto.getSubmissionDate());
         r.setDecisionDate(dto.getDecisionDate());
         r.setPublicationDate(dto.getPublicationDate());
+
         return r;
+    }
+
+    public Conference convertToConferenceEntity(ConferenceDTO dto) {
+        return Conference.builder()
+                .id(dto.getId())
+                .name(dto.getName())
+                .shortName(dto.getShortName())
+                .year(dto.getYear())
+                .publisher(dto.getPublisher())
+                .portalLink(dto.getPortalLink())
+                .platformLink(dto.getPlatformLink())
+                .platformName(dto.getPlatformName())
+                .submissionDeadline(dto.getSubmissionDeadline())
+                .notificationDate(dto.getNotificationDate())
+                .cameraReadyDeadline(dto.getCameraReadyDeadline())
+                .registrationDeadline(dto.getRegistrationDeadline())
+                .conferenceDate(dto.getConferenceDate())
+                .build();
     }
 
     public Publication convertToPublicationEntity(PublicationDTO dto) {
@@ -148,13 +230,16 @@ public class ResearchMapper {
         return p;
     }
 
-    public Author convertToAuthorEntity(AuthorDTO dto) {
-        Author a = new Author();
+    public AuthorResearch convertToAuthorResearchEntity(AuthorDTO dto) {
+        AuthorResearch ar = new AuthorResearch();
+        com.example.backend.entity.research.Author a = new com.example.backend.entity.research.Author();
         a.setId(dto.getId());
         a.setName(dto.getName());
-        a.setRole(dto.getRole());
-        a.setContributionPercentage(dto.getContributionPercentage());
-        return a;
+
+        ar.setAuthor(a);
+        ar.setRole(dto.getRole());
+        ar.setAuthorOrder(dto.getAuthorOrder());
+        return ar;
     }
 
     public void updateEntityFromDTO(Research entity, ResearchDTO dto) {
@@ -164,10 +249,40 @@ public class ResearchMapper {
         entity.setAuthorPlace(dto.getAuthorPlace());
 
         if (dto.getAuthors() != null) {
+            java.util.List<AuthorResearch> existingList = new java.util.ArrayList<>(entity.getAuthors());
             entity.getAuthors().clear();
-            entity.getAuthors().addAll(dto.getAuthors().stream()
-                    .map(this::convertToAuthorEntity)
-                    .collect(Collectors.toList()));
+
+            for (int i = 0; i < dto.getAuthors().size(); i++) {
+                AuthorDTO authorDto = dto.getAuthors().get(i);
+
+                AuthorResearch matchingAr = null;
+                for (AuthorResearch existing : existingList) {
+                    if (authorDto.getId() != null && existing.getAuthor() != null
+                            && authorDto.getId().equals(existing.getAuthor().getId())) {
+                        matchingAr = existing;
+                        break;
+                    } else if (authorDto.getId() == null && authorDto.getName() != null && existing.getAuthor() != null
+                            && authorDto.getName().equalsIgnoreCase(existing.getAuthor().getName())) {
+                        matchingAr = existing;
+                        break;
+                    }
+                }
+
+                if (matchingAr != null) {
+                    matchingAr
+                            .setAuthorOrder(authorDto.getAuthorOrder() != null ? authorDto.getAuthorOrder() : (i + 1));
+                    matchingAr.setRole(authorDto.getRole());
+                    entity.getAuthors().add(matchingAr);
+                    existingList.remove(matchingAr);
+                } else {
+                    AuthorResearch ar = convertToAuthorResearchEntity(authorDto);
+                    ar.setResearch(entity);
+                    if (ar.getAuthorOrder() == null) {
+                        ar.setAuthorOrder(i + 1);
+                    }
+                    entity.getAuthors().add(ar);
+                }
+            }
         }
 
         if (dto.getPublication() != null) {
@@ -176,6 +291,18 @@ public class ResearchMapper {
             } else {
                 updatePublicationFromDTO(entity.getPublication(), dto.getPublication());
             }
+        } else {
+            entity.setPublication(null);
+        }
+
+        if (dto.getConference() != null) {
+            if (entity.getConference() == null || !entity.getConference().getId().equals(dto.getConference().getId())) {
+                entity.setConference(convertToConferenceEntity(dto.getConference()));
+            } else {
+                updateConferenceFromDTO(entity.getConference(), dto.getConference());
+            }
+        } else {
+            entity.setConference(null);
         }
 
         entity.setPaperUrl(dto.getPaperUrl());
@@ -190,6 +317,21 @@ public class ResearchMapper {
         entity.setSubmissionDate(dto.getSubmissionDate());
         entity.setDecisionDate(dto.getDecisionDate());
         entity.setPublicationDate(dto.getPublicationDate());
+    }
+
+    public void updateConferenceFromDTO(Conference entity, ConferenceDTO dto) {
+        entity.setName(dto.getName());
+        entity.setShortName(dto.getShortName());
+        entity.setYear(dto.getYear());
+        entity.setPublisher(dto.getPublisher());
+        entity.setPortalLink(dto.getPortalLink());
+        entity.setPlatformLink(dto.getPlatformLink());
+        entity.setPlatformName(dto.getPlatformName());
+        entity.setSubmissionDeadline(dto.getSubmissionDeadline());
+        entity.setNotificationDate(dto.getNotificationDate());
+        entity.setCameraReadyDeadline(dto.getCameraReadyDeadline());
+        entity.setRegistrationDeadline(dto.getRegistrationDeadline());
+        entity.setConferenceDate(dto.getConferenceDate());
     }
 
     public void updatePublicationFromDTO(Publication entity, PublicationDTO dto) {
@@ -228,6 +370,11 @@ public class ResearchMapper {
             pub.setVenue(original.getPublication().getVenue());
             copy.setPublication(pub);
         }
+
+        if (original.getConference() != null) {
+            copy.setConference(original.getConference());
+        }
+
         return copy;
     }
 }

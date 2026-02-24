@@ -3,18 +3,22 @@ package com.example.backend.entity.research;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Data;
-import org.hibernate.validator.constraints.URL;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Research {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Enumerated(EnumType.STRING)
@@ -27,7 +31,7 @@ public class Research {
 
     @OneToMany(mappedBy = "research", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JsonManagedReference
-    private List<Author> authors = new ArrayList<>();
+    private List<AuthorResearch> authors = new ArrayList<>();
 
     @OneToMany(mappedBy = "research", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -54,6 +58,10 @@ public class Research {
     private String abstractText;
 
     private String notes;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "conference_id")
+    private com.example.backend.entity.Conference conference;
 
     private LocalDate submissionDate;
     private LocalDate decisionDate;

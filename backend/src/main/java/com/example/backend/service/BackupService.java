@@ -3,7 +3,7 @@ package com.example.backend.service;
 import com.example.backend.dto.ResearchDTO;
 import com.example.backend.entity.SystemSettings;
 import com.example.backend.repository.SystemSettingsRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -16,16 +16,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class BackupService {
 
-    @Autowired
-    private CsvService csvService;
-
-    @Autowired
-    private ResearchService researchService;
-
-    @Autowired
-    private SystemSettingsRepo settingsRepo;
+    private final CsvService csvService;
+    private final ResearchService researchService;
+    private final SettingsService settingsService;
+    private final SystemSettingsRepo settingsRepo;
 
     private static final String BACKUP_DIR = "backups";
     private static final String BACKUP_FILE = "research_tracker_backup.csv";
@@ -33,7 +30,7 @@ public class BackupService {
     // Run every 10 minutes to check if backup is due
     @Scheduled(fixedRate = 10 * 60 * 1000)
     public void checkAndBackup() {
-        SystemSettings settings = settingsRepo.getSettings();
+        SystemSettings settings = settingsService.getSettings();
         if (!settings.isAutoBackupEnabled())
             return;
 
@@ -46,7 +43,7 @@ public class BackupService {
     }
 
     public void performBackup() {
-        performBackup(settingsRepo.getSettings());
+        performBackup(settingsService.getSettings());
     }
 
     private synchronized void performBackup(SystemSettings settings) {

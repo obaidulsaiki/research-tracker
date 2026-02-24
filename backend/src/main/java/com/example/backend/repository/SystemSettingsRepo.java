@@ -6,10 +6,4 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SystemSettingsRepo extends JpaRepository<SystemSettings, Long> {
-    default SystemSettings getSettings() {
-        return findAll().stream().findFirst().orElseGet(() -> {
-            SystemSettings s = new SystemSettings();
-            return save(s);
-        });
-    }
 }

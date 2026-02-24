@@ -41,15 +41,24 @@ export interface JournalMetadata {
     indexedBy?: string;
 }
 
+import { Conference } from './conference.service';
+
+export interface CameraReadyTask {
+    taskKey: string;
+    taskLabel: string;
+    completed: boolean;
+    updatedAt?: string;
+}
+
 export interface Research {
     id?: number;
     status: string;
     pid: number;
     title: string;
-    publication: Publication | null; // Replaces flat fields
+    publication: Publication | null;
     authorPlace: number;
     authors: Author[];
-    paperUrl?: string; // This is the direct link that matches backend @URL
+    paperUrl?: string;
     overleafUrl?: string;
     driveUrl?: string;
     datasetUrl?: string;
@@ -58,6 +67,8 @@ export interface Research {
     featured: boolean;
     synopsis?: string;
     notes?: string;
+    conference?: Conference;
+    checklist?: CameraReadyTask[];
     submissionDate?: string;
     decisionDate?: string;
     publicationDate?: string;
@@ -68,7 +79,7 @@ export interface Research {
 })
 export class ResearchService {
     private http = inject(HttpClient);
-    private apiUrl = 'http://localhost:8080/api/research';
+    private apiUrl = '/api/research';
 
     // Signals for state
     public lastActionItemId = signal<number | null>(null);
@@ -198,6 +209,28 @@ export class ResearchService {
             const a = document.createElement('a');
             a.href = url;
             a.download = 'research_portfolio.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+    }
+
+    exportExcel(): void {
+        this.http.get(`${this.apiUrl}/export/excel`, { responseType: 'blob' }).subscribe(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'research_portfolio.xlsx';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+    }
+
+    exportPdf(): void {
+        this.http.get(`${this.apiUrl}/export/pdf`, { responseType: 'blob' }).subscribe(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'research_portfolio.pdf';
             a.click();
             window.URL.revokeObjectURL(url);
         });

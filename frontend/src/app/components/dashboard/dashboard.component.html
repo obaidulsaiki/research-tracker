@@ -14,7 +14,8 @@
             <app-overview-tab [stats]="mainStats()" [history]="recentHistory()" [activityData]="activityData()"
                 [settings]="sysSettings()" (viewAllHistory)="activeTab.set('history')"
                 (statClick)="onStatFilterChange($event)"
-                (onUpdateSettings)="settingsService.updateSettings($event).subscribe()">
+                (onUpdateSettings)="settingsService.updateSettings($event).subscribe()"
+                (exploreDeadlines)="activeTab.set('deadlines')">
             </app-overview-tab>
             }
 
@@ -58,6 +59,10 @@
             <app-download-tab [itemCount]="researchItems().length" (onExcel)="exportToExcel()" (onPdf)="exportToPdf()"
                 (onCsv)="exportData()">
             </app-download-tab>
+            }
+
+            @if (activeTab() === 'deadlines') {
+            <app-deadlines-tab></app-deadlines-tab>
             }
         </div>
     </main>

@@ -7,5 +7,5 @@ public class AuthorDTO {
     private Long id;
     private String name;
     private String role;
-    private double contributionPercentage;
+    private Integer authorOrder;
 }

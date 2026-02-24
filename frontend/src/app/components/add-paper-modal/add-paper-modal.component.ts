@@ -80,6 +80,11 @@ import { ResearchService, Research, Author } from '../../services/research.servi
           </div>
 
           <div *ngIf="tab() === 'pub'" class="tab-pane">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: -0.5rem;">
+              <button type="button" class="btn-cancel" (click)="clearPublication()" style="color: #ef4444; font-size: 0.7rem; font-weight: 800; padding: 0.25rem 0.5rem; border: 1px solid #fecaca; border-radius: 6px; background: #fff5f5;">
+                🗑 CLEAR PUBLICATION INFO
+              </button>
+            </div>
             <div class="field-group">
               <label>Publication Name (Journal/Conference)</label>
               <div style="display: flex; gap: 0.5rem; align-items: center;">
@@ -203,6 +208,18 @@ import { ResearchService, Research, Author } from '../../services/research.servi
           </footer>
         </form>
       </div>
+
+      <!-- Custom Confirmation Modal Overlay -->
+      <div *ngIf="showClearConfirm()" class="modal-backdrop confirm-overlay" (click)="cancelClearPublication()">
+        <div class="data-card confirm-dialog animate-fade-in" (click)="$event.stopPropagation()">
+          <h3>⚠️ Confirm Action</h3>
+          <p>Are you sure you want to permanently clear all publication details for this paper?</p>
+          <div class="confirm-actions">
+            <button type="button" class="btn-cancel" (click)="cancelClearPublication()">Cancel</button>
+            <button type="button" class="btn-primary btn-danger" (click)="confirmClearPublication()">Yes, Clear Data</button>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -214,6 +231,14 @@ import { ResearchService, Research, Author } from '../../services/research.servi
       animation: backdrop-in 0.4s ease;
     }
     @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+    .confirm-overlay { z-index: 4000; background: hsla(222, 47%, 8%, 0.6); }
+    .confirm-dialog { max-width: 400px; padding: 2rem !important; text-align: center; display: flex; flex-direction: column; gap: 1rem; background: white; border-radius: 20px; border: 1px solid var(--p-border); }
+    .confirm-dialog h3 { color: var(--p-error); font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; }
+    .confirm-dialog p { color: var(--p-text-muted); font-size: 0.9rem; line-height: 1.5; font-weight: 500; }
+    .confirm-actions { display: flex; justify-content: center; gap: 1rem; margin-top: 0.5rem; }
+    .btn-danger { background: var(--p-error) !important; box-shadow: 0 8px 20px -4px rgba(239, 68, 68, 0.4) !important; }
+    .btn-danger:hover { background: #dc2626 !important; box-shadow: 0 12px 28px -4px rgba(239, 68, 68, 0.5) !important; }
 
     .modal-container { 
       width: 100%; max-width: 680px; display: flex; flex-direction: column; overflow: hidden; 
@@ -364,6 +389,7 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
   successMessage = signal('');
   showValidation = signal(false);
   isCheckingDuplicate = signal(false);
+  showClearConfirm = signal(false);
 
   @Input() set editData(data: Research | undefined) {
     if (data && Object.keys(data).length > 0) {
@@ -512,6 +538,26 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
         this.lookupStatus.set('⚠️ Lookup failed (check backend)');
       }
     });
+  }
+
+  clearPublication() {
+    this.showClearConfirm.set(true);
+  }
+
+  confirmClearPublication() {
+    this.paper.publication = this.getEmptyPaper().publication;
+    this.onMainDetailsChange();
+    this.showClearConfirm.set(false);
+    this.successMessage.set('🗑️ Publication information has been fully cleared.');
+    setTimeout(() => {
+      if (this.successMessage().includes('cleared')) {
+        this.successMessage.set('');
+      }
+    }, 4000);
+  }
+
+  cancelClearPublication() {
+    this.showClearConfirm.set(false);
   }
 
   onBulkAuthorChange(event: any) {

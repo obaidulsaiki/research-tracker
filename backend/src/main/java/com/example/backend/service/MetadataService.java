@@ -5,7 +5,7 @@ import com.example.backend.dto.PublicationDTO;
 import com.example.backend.dto.ResearchDTO;
 import com.example.backend.dto.JournalMetadataDTO;
 import com.example.backend.dto.ConferenceMetadataDTO;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.util.ArrayList;
@@ -13,13 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class MetadataService {
 
-    @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
-    private JournalService journalService;
+    private final RestTemplate restTemplate;
+    private final JournalService journalService;
 
     @SuppressWarnings("unchecked")
     public ResearchDTO fetchMetadataByDoiAsDTO(String doi) {

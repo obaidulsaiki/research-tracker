@@ -10,6 +10,7 @@ import { HistoryTabComponent } from './tabs/history-tab.component';
 import { AuthorsTabComponent } from './tabs/authors-tab.component';
 import { AuthorDetailComponent } from './tabs/author-detail.component';
 import { DownloadTabComponent } from './tabs/download-tab.component';
+import { DeadlinesTabComponent } from './tabs/deadlines-tab.component';
 import { AddPaperModalComponent } from '../add-paper-modal/add-paper-modal.component';
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { ResearchService, Research } from '../../services/research.service';
@@ -32,6 +33,7 @@ import { ResearchUtility } from '../../utils/research.utils';
     AuthorsTabComponent,
     AuthorDetailComponent,
     DownloadTabComponent,
+    DeadlinesTabComponent,
     AddPaperModalComponent,
     ConfirmModalComponent
   ],
@@ -172,6 +174,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.filterStatus.set('HYPOTHESIS');
     } else if (tab === 'archive') {
       this.filterStatus.set('all');
+    } else if (tab === 'deadlines') {
+      // Manual milestones are refreshed via researchService.refresh() or specialized service
     }
   }
 
@@ -242,16 +246,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Export/Import
   exportData() {
     console.log('Exporting CSV...');
+    this.researchService.exportCsv();
     this.showSuccess('CSV Export started');
   }
 
   exportToExcel() {
     console.log('Exporting Excel...');
+    this.researchService.exportExcel();
     this.showSuccess('Excel Export started');
   }
 
   exportToPdf() {
     console.log('Exporting PDF...');
+    this.researchService.exportPdf();
     this.showSuccess('PDF Export started');
   }
 

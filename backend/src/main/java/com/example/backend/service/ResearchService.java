@@ -2,13 +2,16 @@ package com.example.backend.service;
 
 import com.example.backend.dto.HistoryEntryDTO;
 import com.example.backend.dto.ResearchDTO;
+import com.example.backend.entity.Conference;
 import com.example.backend.entity.research.HistoryEntry;
 import com.example.backend.entity.research.Research;
-import com.example.backend.repository.AuthorRepo;
+import com.example.backend.repository.ConferenceRepo;
 import com.example.backend.repository.HistoryEntryRepo;
 import com.example.backend.repository.ResearchRepo;
 import com.example.backend.mapper.ResearchMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.backend.service.validation.ResearchValidator;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,56 +21,41 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ResearchService {
 
-    @Autowired
-    private ResearchRepo researchRepo;
-
-    @Autowired
-    private HistoryEntryRepo historyEntryRepo;
-
-    @Autowired
-    private AuthorRepo authorRepo;
-
-    @Autowired
-    private ResearchMapper mapper;
-
-    @Autowired
-    private HistoryService historyService;
-
-    @Autowired
-    private AnalyticsService analyticsService;
+    private final ResearchRepo researchRepo;
+    private final ConferenceRepo conferenceRepo;
+    private final HistoryEntryRepo historyEntryRepo;
+    private final ResearchMapper mapper;
+    private final HistoryService historyService;
+    private final AnalyticsService analyticsService;
+    private final AuthorService authorService;
+    private final ResearchValidator validator;
+    private final ChecklistService checklistService;
 
     public List<ResearchDTO> getAll() {
-        List<Research> allEntities = researchRepo.findAll();
-        List<ResearchDTO> dtos = new java.util.ArrayList<>();
-        for (Research r : allEntities) {
-            dtos.add(mapper.convertToDTO(r));
-        }
-        return dtos;
+        return researchRepo.findAll().stream()
+                .map(r -> {
+                    return mapper.convertToDTO(r);
+                })
+                .collect(Collectors.toList());
     }
 
     public ResearchDTO getById(Long id) {
-        Research r = researchRepo.findById(id).orElse(null);
-        return r != null ? mapper.convertToDTO(r) : null;
+        return researchRepo.findById(id)
+                .map(r -> {
+                    ResearchDTO dto = mapper.convertToDTO(r);
+                    dto.setChecklist(checklistService.getChecklist(r.getId()));
+                    return dto;
+                })
+                .orElse(null);
     }
 
     @Transactional
     public ResearchDTO save(ResearchDTO dto) {
-        String title = dto.getTitle();
-        String pubName = dto.getPublication() != null ? dto.getPublication().getName() : null;
-        String year = dto.getPublication() != null ? dto.getPublication().getYear() : null;
-
-        if (dto.getId() != null) {
-            boolean exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYearAndIdNot(title, pubName,
-                    year,
-                    dto.getId());
-            if (exists) {
-                throw new RuntimeException("A record with this Title, Publication, and Year already exists.");
-            }
-        } else if (researchRepo.existsByTitleAndPublicationNameAndPublicationYear(title, pubName, year)) {
-            throw new RuntimeException("A record with this Title, Publication, and Year already exists.");
-        }
+        validator.validateUniqueness(dto);
 
         Research entity;
         Research old = null;
@@ -81,10 +69,51 @@ public class ResearchService {
             entity = mapper.convertToEntity(dto);
         }
 
-        // Ensure bidirectional relationship is set for authors
-        if (entity.getAuthors() != null) {
-            entity.getAuthors().forEach(a -> a.setResearch(entity));
+        // AUTO-LINK CONFERENCE BY NAME
+        // Only attempt auto-linking if this is a NEW record, OR if the publication name
+        // changed
+        // to a known conference. We shouldn't auto-link if the user explicitly unlinked
+        // it.
+        boolean shouldAutoLink = entity.getConference() == null &&
+                entity.getPublication() != null &&
+                entity.getPublication().getName() != null &&
+                !entity.getPublication().getName().isBlank();
+
+        if (shouldAutoLink) {
+            String pubName = entity.getPublication().getName();
+            String pubYear = entity.getPublication().getYear();
+
+            // Try match by Short Name first (e.g. NeurIPS)
+            List<Conference> matches = conferenceRepo.findByShortNameIgnoreCase(pubName);
+            // If no short name match, try Full Name (e.g. "International Conference on...")
+            if (matches.isEmpty()) {
+                matches = conferenceRepo.findByNameIgnoreCase(pubName);
+            }
+
+            if (!matches.isEmpty()) {
+                // If we found matches, try to find one with a matching year
+                Conference bestMatch = matches.get(0);
+                if (pubYear != null) {
+                    for (Conference m : matches) {
+                        if (pubYear.equals(m.getYear())) {
+                            bestMatch = m;
+                            break;
+                        }
+                    }
+                }
+                entity.setConference(bestMatch);
+                // Also update the other side of the relationship if possible
+                if (bestMatch.getPapers() != null && !bestMatch.getPapers().contains(entity)) {
+                    bestMatch.getPapers().add(entity);
+                }
+                log.info("AUTO-LINK: Linked paper '{}' to conference '{} {}' (ID: {})",
+                        entity.getTitle(), bestMatch.getName(), bestMatch.getYear(), bestMatch.getId());
+            } else {
+                log.debug("AUTO-LINK: No matching conference for publication '{}'", pubName);
+            }
         }
+
+        authorService.resolveAuthorsForResearch(entity);
 
         Research saved = researchRepo.save(entity);
 
@@ -114,7 +143,6 @@ public class ResearchService {
             historyEntryRepo.save(deletedEntry);
 
             if (r.getAuthors() != null) {
-                authorRepo.deleteAll(r.getAuthors());
                 r.getAuthors().clear();
             }
             if (r.getHistoryEntries() != null) {
@@ -127,7 +155,6 @@ public class ResearchService {
 
     @Transactional
     public void deleteAll() {
-        authorRepo.deleteAll();
         historyEntryRepo.deleteAll();
         researchRepo.deleteAll();
     }
@@ -137,11 +164,8 @@ public class ResearchService {
     }
 
     public List<HistoryEntryDTO> getHistory() {
-        List<HistoryEntry> allHistory = historyEntryRepo.findAll();
-        List<HistoryEntryDTO> dtos = new java.util.ArrayList<>();
-        for (HistoryEntry h : allHistory) {
-            dtos.add(mapper.convertToHistoryDTO(h));
-        }
-        return dtos;
+        return historyEntryRepo.findAll().stream()
+                .map(mapper::convertToHistoryDTO)
+                .collect(Collectors.toList());
     }
 }

@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SystemSettings } from '../../../services/settings.service';
+import { ResearchService } from '../../../services/research.service';
+import { ConferenceService, Conference } from '../../../services/conference.service';
 
 @Component({
   selector: 'app-overview-tab',
@@ -98,6 +100,42 @@ import { SystemSettings } from '../../../services/settings.service';
           </div>
         </div>
 
+        <!-- MILESTONE HIGHLIGHTS WIDGET -->
+        <div class="p-card deadline-card">
+          <div class="deadline-header">
+            <div>
+              <h3 class="deadline-title">Milestone Radar</h3>
+              <p class="deadline-subtitle">Mission-critical submission windows</p>
+            </div>
+            <div class="deadline-count">{{ upcomingMilestones().length }} Active</div>
+          </div>
+
+          <div class="deadline-list">
+            @for (ms of upcomingMilestones().slice(0, 3); track ms.title) {
+              <div class="deadline-item" [class.priority-urgent]="ms.isUrgent">
+                <div class="deadline-info">
+                  <div class="deadline-name">{{ ms.venue }}</div>
+                  <div class="deadline-meta">
+                    <span class="p-badge">{{ ms.type }}</span>
+                    <span class="deadline-notes">{{ ms.title | slice:0:30 }}...</span>
+                  </div>
+                </div>
+                <div class="countdown-clock">
+                  <div class="clock-value">{{ ms.daysLeft }}</div>
+                  <div class="clock-label">DAYS</div>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-deadline">
+                <div class="empty-icon">🏖️</div>
+                <p>No immediate milestones. Keep exploring!</p>
+              </div>
+            }
+          </div>
+          
+          <button class="btn-glass full-width" style="margin-top: auto;" (click)="exploreDeadlines.emit()">Manage All Milestones</button>
+        </div>
+
         <!-- RECENT ACTIVITY FEED -->
         <div class="p-card activity-card">
           <h3 class="activity-title">Recent Stream</h3>
@@ -178,8 +216,9 @@ import { SystemSettings } from '../../../services/settings.service';
     .stat-value { font-size: 1.75rem; font-weight: 900; color: var(--p-text); line-height: 1; font-family: var(--font-display); }
     .mini-graph { margin-top: 0.5rem; opacity: 0.4; }
 
-    .view-split { display: grid; grid-template-columns: 1.6fr 1fr; gap: 2rem; }
-    .chart-card { min-height: 400px; padding: 1.5rem; position: relative; }
+    .view-split { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 1.5rem; }
+    
+    .chart-card { min-height: 400px; padding: 1.5rem; position: relative; margin-bottom: 2rem; }
     .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; }
     .chart-titles { flex: 1; }
     .chart-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 800; letter-spacing: -0.3px; }
@@ -280,17 +319,85 @@ import { SystemSettings } from '../../../services/settings.service';
     .indicator-dot { width: 6px; height: 6px; border-radius: 50%; }
     .indicator-dot.online { background: #4ade80; box-shadow: 0 0 6px #4ade80; }
     .indicator-text { font-size: 0.65rem; font-weight: 800; }
+
+    /* DEADLINE RADAR STYLES */
+    .deadline-card { padding: 1.5rem; display: flex; flex-direction: column; background: white; border: 1px solid var(--p-border); }
+    .deadline-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; }
+    .deadline-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 800; }
+    .deadline-subtitle { font-size: 0.75rem; color: var(--p-text-muted); font-weight: 500; }
+    .deadline-count { background: var(--p-bg-alt); color: var(--p-text); padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; }
+    
+    .deadline-list { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
+    .deadline-item { 
+      padding: 1rem; background: var(--p-bg-subtle); border-radius: 12px; border: 1px solid var(--p-border);
+      display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease;
+    }
+    .deadline-item:hover { transform: translateX(5px); border-color: var(--p-accent); }
+    .deadline-name { font-weight: 800; font-size: 0.9rem; color: var(--p-text); margin-bottom: 0.25rem; }
+    .deadline-meta { display: flex; align-items: center; gap: 0.5rem; }
+    
+    .countdown-clock { text-align: center; background: white; padding: 0.5rem; border-radius: 10px; min-width: 60px; border: 1px solid var(--p-border); }
+    .clock-value { font-size: 1.25rem; font-weight: 900; color: var(--p-accent); font-family: var(--font-display); line-height: 1; }
+    .clock-label { font-size: 0.5rem; font-weight: 800; color: var(--p-text-muted); margin-top: 2px; }
+    
+    .p-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.55rem; font-weight: 800; background: var(--p-bg-alt); color: var(--p-text); }
+    
+    .deadline-item.priority-urgent { border-left: 4px solid #ef4444; background: #fffbff; }
+    .deadline-item.priority-urgent .clock-value { color: #ef4444; }
+
+    .full-width { width: 100%; font-size: 0.75rem; padding: 0.75rem; }
+    .empty-deadline { text-align: center; padding: 2rem; opacity: 0.5; }
   `]
 })
-export class OverviewTabComponent {
-  protected readonly Math = Math;
+export class OverviewTabComponent implements OnInit {
   @Input() stats: any[] = [];
   @Input() history: any[] = [];
   @Input() activityData: number[] = [];
   @Input() settings: SystemSettings | null = null;
+
   @Output() viewAllHistory = new EventEmitter<void>();
   @Output() statClick = new EventEmitter<string>();
   @Output() onUpdateSettings = new EventEmitter<SystemSettings>();
+  @Output() exploreDeadlines = new EventEmitter<void>();
+
+  private researchService = inject(ResearchService);
+  private conferenceService = inject(ConferenceService);
+  protected readonly Math = Math;
+
+  ngOnInit() {
+    // Load conferences if empty to populate the Radar
+    if (this.conferenceService.conferences().length === 0) {
+      this.conferenceService.loadAll();
+    }
+  }
+
+  upcomingMilestones = computed(() => {
+    const conferences = this.conferenceService.conferences();
+    const allMilestones: any[] = [];
+
+    conferences.forEach(c => {
+      this.addIfValid(allMilestones, 'Initial Submission', c.shortName || 'Conf', 'Submission', c.submissionDeadline);
+      this.addIfValid(allMilestones, 'Notification', c.shortName || 'Conf', 'Notification', c.notificationDate);
+      this.addIfValid(allMilestones, 'Camera-Ready Phase', c.shortName || 'Conf', 'Camera-Ready', c.cameraReadyDeadline);
+      this.addIfValid(allMilestones, 'Early Registration', c.shortName || 'Conf', 'Registration', c.registrationDeadline);
+      this.addIfValid(allMilestones, 'Event Start', c.shortName || 'Conf', 'Conference', c.conferenceDate);
+    });
+
+    return allMilestones
+      .filter(ms => ms.daysLeft >= 0)
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+  });
+
+  private addIfValid(list: any[], title: string, venue: string, type: string, date: string | undefined) {
+    if (!date) return;
+    const diff = Date.parse(date) - Date.now();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days >= 0) {
+      list.push({
+        title, venue, type, daysLeft: days, isUrgent: days < 7
+      });
+    }
+  }
 
   getStatIcon(label: string): string {
     const l = label.toLowerCase();

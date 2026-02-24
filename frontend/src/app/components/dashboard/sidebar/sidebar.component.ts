@@ -19,6 +19,9 @@ import { CommonModule } from '@angular/common';
         <div class="nav-item" [class.active]="activeTab === 'archive'" (click)="tabChange.emit('archive')">
           <span class="nav-icon">📚</span> Archive
         </div>
+        <div class="nav-item" [class.active]="activeTab === 'deadlines'" (click)="tabChange.emit('deadlines')">
+          <span class="nav-icon">📅</span> Deadlines
+        </div>
       </nav>
 
       <nav class="nav-section">

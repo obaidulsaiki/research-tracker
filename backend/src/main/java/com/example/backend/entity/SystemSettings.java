@@ -17,5 +17,4 @@ public class SystemSettings {
     @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastBackupTime;
 
-    private int dailyResearchGoal = 8; // Default research goal in hours
 }

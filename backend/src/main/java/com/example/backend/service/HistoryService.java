@@ -4,7 +4,7 @@ import com.example.backend.entity.research.HistoryEntry;
 import com.example.backend.entity.research.Publication;
 import com.example.backend.entity.research.Research;
 import com.example.backend.repository.HistoryEntryRepo;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,10 +12,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 @Service
+@RequiredArgsConstructor
 public class HistoryService {
 
-    @Autowired
-    private HistoryEntryRepo historyEntryRepo;
+    private final HistoryEntryRepo historyEntryRepo;
 
     @Transactional
     public void logHistory(Research research, String type, String oldVal, String newVal) {
