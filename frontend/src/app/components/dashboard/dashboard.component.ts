@@ -7,6 +7,7 @@ import { AddPaperModalComponent } from '../add-paper-modal/add-paper-modal.compo
 import { ConfirmModalComponent } from '../confirm-modal/confirm-modal.component';
 import { ResearchService, Research } from '../../services/research.service';
 import { SearchFilterService } from '../../services/search-filter.service';
+import { LoadingModalComponent } from '../loading-modal/loading-modal.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,7 +18,8 @@ import { SearchFilterService } from '../../services/search-filter.service';
     HeaderComponent,
     SidebarComponent,
     AddPaperModalComponent,
-    ConfirmModalComponent
+    ConfirmModalComponent,
+    LoadingModalComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']

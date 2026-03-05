@@ -87,6 +87,7 @@ export class ResearchService {
     public history = signal<HistoryEntry[]>([]);
     public analytics = signal<any>(null);
     public loading = signal<boolean>(false);
+    public loadingMessage = signal<string>('');
 
     refresh(): void {
         this.loadAll();
@@ -148,11 +149,17 @@ export class ResearchService {
     }
 
     bulkSave(researches: Research[]): Observable<Research[]> {
+        this.loading.set(true);
+        this.loadingMessage.set('Saving multiple research projects...');
         return this.http.post<Research[]>(`${this.apiUrl}/bulk`, researches).pipe(
             tap(() => {
                 this.loadAll();
                 this.loadAnalytics();
                 this.loadHistory();
+            }),
+            tap({
+                complete: () => this.loading.set(false),
+                error: () => this.loading.set(false)
             })
         );
     }
@@ -168,11 +175,17 @@ export class ResearchService {
     }
 
     deleteAll(): Observable<void> {
+        this.loading.set(true);
+        this.loadingMessage.set('Wiping entire research database...');
         return this.http.delete<void>(`${this.apiUrl}/all`).pipe(
             tap(() => {
                 this.loadAll();
                 this.loadAnalytics();
                 this.loadHistory();
+            }),
+            tap({
+                complete: () => this.loading.set(false),
+                error: () => this.loading.set(false)
             })
         );
     }
@@ -182,57 +195,91 @@ export class ResearchService {
     }
 
     importExcel(file: File): Observable<Research[]> {
+        this.loading.set(true);
+        this.loadingMessage.set('Importing Excel data...');
         const formData = new FormData();
         formData.append('file', file);
         return this.http.post<Research[]>(`${this.apiUrl}/import/excel`, formData).pipe(
             tap(() => {
                 this.loadAll();
                 this.loadAnalytics();
+            }),
+            tap({
+                complete: () => this.loading.set(false),
+                error: () => this.loading.set(false)
             })
         );
     }
 
     importCsv(file: File): Observable<Research[]> {
+        this.loading.set(true);
+        this.loadingMessage.set('Importing CSV data...');
         const formData = new FormData();
         formData.append('file', file);
         return this.http.post<Research[]>(`${this.apiUrl}/import`, formData).pipe(
             tap(() => {
                 this.loadAll();
                 this.loadAnalytics();
+            }),
+            tap({
+                complete: () => this.loading.set(false),
+                error: () => this.loading.set(false)
             })
         );
     }
 
     exportCsv(): void {
-        this.http.get(`${this.apiUrl}/export`, { responseType: 'blob' }).subscribe(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'research_portfolio.csv';
-            a.click();
-            window.URL.revokeObjectURL(url);
+        this.loading.set(true);
+        this.loadingMessage.set('Generating CSV export...');
+        this.http.get(`${this.apiUrl}/export`, { responseType: 'blob' }).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'research_portfolio.csv';
+                a.click();
+                window.URL.revokeObjectURL(url);
+                this.loading.set(false);
+            },
+            error: () => this.loading.set(false)
         });
     }
 
     exportExcel(): void {
-        this.http.get(`${this.apiUrl}/export/excel`, { responseType: 'blob' }).subscribe(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'research_portfolio.xlsx';
-            a.click();
-            window.URL.revokeObjectURL(url);
+        this.loading.set(true);
+        this.loadingMessage.set('Generating Excel document...');
+        this.http.get(`${this.apiUrl}/export/excel`, { responseType: 'blob' }).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'research_portfolio.xlsx';
+                a.click();
+                window.URL.revokeObjectURL(url);
+                this.loading.set(false);
+            },
+            error: () => this.loading.set(false)
         });
     }
 
-    exportPdf(): void {
-        this.http.get(`${this.apiUrl}/export/pdf`, { responseType: 'blob' }).subscribe(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'research_portfolio.pdf';
-            a.click();
-            window.URL.revokeObjectURL(url);
+    exportPdf(style: string = 'PROFESSIONAL'): void {
+        this.loading.set(true);
+        this.loadingMessage.set(`Generating ${style.toLowerCase()} PDF portfolio...`);
+        this.http.get(`${this.apiUrl}/export/pdf`, {
+            params: { style },
+            responseType: 'blob'
+        }).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const filename = style === 'PROFESSIONAL' ? 'research_publications_resume.pdf' : 'research_portfolio_summary.pdf';
+                a.download = filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                this.loading.set(false);
+            },
+            error: () => this.loading.set(false)
         });
     }
 

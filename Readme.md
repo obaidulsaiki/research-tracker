@@ -31,9 +31,13 @@ A high-fidelity academic ecosystem designed for elite researchers. This platform
 - **Mutation Tracking**: A comprehensive history tab logging every `CREATE`, `UPDATE`, and `DELETE` event to maintain total architectural traceability.
 - **Autonomous Backup**: Set-and-forget file-based redundancy at fixed intervals (4h, 12h, 24h) directly on the host filesystem.
 
-### 📄 Executive Export Engine
-- **Professional PDF**: Submission-ready portfolios with academic badges (IF, Rank, Quartile).
-- **Enterprise Excel & CSV**: Complex spreadsheet generation for deep analysis and universal data portability.
+### 📄 Intelligent Export Engine
+- **Dual-Style PDF Portfolios**: Generate academic summaries in two distinct formats:
+    - **🎓 Professional CV Style**: Clean, indented academic lists optimized for resume integration.
+    - **✨ Stylish Grid View**: Data-rich visual tables for quick record overviews.
+- **Smart Filtering**: Professional exports automatically filter for `ACCEPTED`, `PUBLISHED`, and `RUNNING` states.
+- **Lossless Data Backup**: Enhanced CSV & Excel engines now export/import full nested object structures including **Conference links** and **Camera-Ready checklists**.
+- **Real-time Feedback**: Global loading modal system provides visual feedback for all high-latency data operations.
 
 ---
 
@@ -53,6 +57,7 @@ A high-fidelity academic ecosystem designed for elite researchers. This platform
 - **Navigation**: Clean, scalable **Nested Routing** architecture for seamless localized view updates without entire component re-renders.
 - **Typography**: "Plus Jakarta Sans" & "Outfit" for premium readability.
 - **Design System**: High-custom CSS utility layer for maximum aesthetic control.
+- **Processing States**: Integrated **Premium Loading Modals** with smooth animations for data-intensive imports and PDF generation.
 
 ---
 
@@ -88,7 +93,7 @@ A high-fidelity academic ecosystem designed for elite researchers. This platform
 | `GET` | `/history` | Full system audit log history |
 | `GET` | `/export` | Download standard data export |
 | `GET` | `/export/excel` | Comprehensive Excel spreadsheet generation |
-| `GET` | `/export/pdf` | Professional PDF portfolio layout |
+| `GET` | `/export/pdf` | Generate PDF (Parameters: `style=PROFESSIONAL` or `STYLISH`) |
 | `POST` | `/import` | Bulk upload via file stream |
 
 ### 📅 Conference & Deadlines (`/api/conferences`)

@@ -44,7 +44,7 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
             @if (settings()) {
               <div class="goal-setter">
                 <span class="goal-label">Daily Goal:</span>
-                <select [ngModel]="settings()?.dailyResearchGoal" (ngModelChange)="updateGoal(settings(), $event)" class="goal-select">
+                <select [ngModel]="settings().dailyResearchGoal" (ngModelChange)="updateGoal(settings(), $event)" class="goal-select">
                   @for (g of [4, 6, 8, 10, 12]; track g) {
                     <option [ngValue]="g">{{ g }}h</option>
                   }
@@ -62,9 +62,9 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
                   <div class="bar-container">
                     <div class="bar" 
                          [style.height.%]="(Math.max(h || 0, 0.5) / 12) * 100"
-                         [class.goal-met]="h >= settings()!.dailyResearchGoal">
+                         [class.goal-met]="h >= settings().dailyResearchGoal">
                       <div class="bar-value">{{ h > 0 ? h.toFixed(1) : h }}h</div>
-                      @if (h >= settings()!.dailyResearchGoal) {
+                      @if (h >= settings().dailyResearchGoal) {
                         <div class="success-star">✨</div>
                       }
                     </div>
@@ -75,8 +75,8 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
                    </div>
                 }
                 <!-- DYNAMIC BASELINE -->
-                <div class="baseline" [style.bottom.%]="(settings()!.dailyResearchGoal / 12) * 100">
-                  <span class="baseline-tag">{{ settings()!.dailyResearchGoal }}h TARGET</span>
+                <div class="baseline" [style.bottom.%]="(settings().dailyResearchGoal / 12) * 100">
+                  <span class="baseline-tag">{{ settings().dailyResearchGoal }}h TARGET</span>
                 </div>
             </div>
           } @else {

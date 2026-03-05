@@ -27,14 +27,18 @@ import { ResearchService } from '../../../services/research.service';
         <!-- PDF DOWNLOAD -->
         <div class="p-card export-card pdf">
           <div class="export-icon">📄</div>
-          <h3 class="export-title">Professional PDF</h3>
+          <h3 class="export-title">Portfolio PDF</h3>
           <p class="export-desc">
-            Generate a high-end PDF portfolio summary suitable for academic applications and CV inclusion.
+            Generate your research summary in two high-quality formats: professional academic or stylish grid.
           </p>
-          <div class="export-meta">
-            <span class="p-badge premium-badge">Premium Layout</span>
+          <div class="pdf-action-stack">
+            <button class="btn-pdf-professional" (click)="researchService.exportPdf('PROFESSIONAL')">
+               <span class="btn-icon">🎓</span> Professional (CV Style)
+            </button>
+            <button class="btn-pdf-stylish" (click)="researchService.exportPdf('STYLISH')">
+               <span class="btn-icon">✨</span> Stylish (Grid View)
+            </button>
           </div>
-          <button class="btn-vibrant export-btn" (click)="researchService.exportPdf()">Download Portfolio</button>
         </div>
 
         <!-- CSV DOWNLOAD -->
@@ -134,6 +138,28 @@ import { ResearchService } from '../../../services/research.service';
     .export-btn { width: 100%; height: 40px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; margin-top: auto; border: none; cursor: pointer; }
     .btn-vibrant { background: var(--p-accent); color: white; }
     .btn-glass { background: var(--p-bg-subtle); color: var(--p-text-muted); border: 1px solid var(--p-border); }
+
+    .pdf-action-stack {
+      display: flex; flex-direction: column; gap: 0.75rem; width: 100%; margin-top: auto;
+    }
+    .btn-pdf-professional, .btn-pdf-stylish {
+      width: 100%; height: 42px; border-radius: 12px; font-weight: 800; font-size: 0.75rem;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      cursor: pointer; transition: all 0.3s ease; border: 1.5px solid transparent;
+    }
+    .btn-pdf-professional {
+      background: #1e293b; color: white;
+    }
+    .btn-pdf-professional:hover {
+      background: #0f172a; transform: translateY(-2px);
+    }
+    .btn-pdf-stylish {
+      background: white; color: var(--p-accent); border-color: var(--p-accent);
+    }
+    .btn-pdf-stylish:hover {
+      background: var(--p-accent-muted); transform: translateY(-2px);
+    }
+    .btn-icon { font-size: 1rem; }
     
     .backup-controls {
       width: 100%; display: flex; flex-direction: column; gap: 0.75rem;
@@ -192,8 +218,16 @@ export class DownloadTabComponent implements OnInit {
   }
 
   manualBackup() {
+    this.researchService.loading.set(true);
+    this.researchService.loadingMessage.set('Triggering server-side manual backup...');
     this.settingsService.triggerManualBackup().subscribe({
-      next: () => alert('✨ Manual backup completed successfully!')
+      next: () => {
+        this.researchService.loading.set(false);
+        this.researchService.refresh();
+      },
+      error: () => {
+        this.researchService.loading.set(false);
+      }
     });
   }
 

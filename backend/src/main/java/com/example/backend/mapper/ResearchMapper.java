@@ -195,6 +195,10 @@ public class ResearchMapper {
         r.setDecisionDate(dto.getDecisionDate());
         r.setPublicationDate(dto.getPublicationDate());
 
+        if (dto.getConference() != null) {
+            r.setConference(convertToConferenceEntity(dto.getConference()));
+        }
+
         return r;
     }
 

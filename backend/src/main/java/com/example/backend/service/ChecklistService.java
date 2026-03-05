@@ -59,6 +59,30 @@ public class ChecklistService {
         return convertToDTO(checklistRepo.save(task));
     }
 
+    @Transactional
+    public void updateChecklist(Long researchId, List<CameraReadyTaskDTO> dtos) {
+        if (dtos == null || dtos.isEmpty())
+            return;
+
+        List<CameraReadyTask> existing = checklistRepo.findAllByResearchId(researchId);
+
+        for (CameraReadyTaskDTO dto : dtos) {
+            CameraReadyTask task = existing.stream()
+                    .filter(t -> t.getTaskKey().equals(dto.getTaskKey()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        CameraReadyTask newTask = createTask(researchId, dto.getTaskKey(), dto.getTaskLabel());
+                        existing.add(newTask);
+                        return newTask;
+                    });
+
+            task.setCompleted(dto.isCompleted());
+            task.setTaskLabel(dto.getTaskLabel());
+        }
+
+        checklistRepo.saveAll(existing);
+    }
+
     private CameraReadyTask createTask(Long resId, String key, String label) {
         return CameraReadyTask.builder()
                 .researchId(resId)

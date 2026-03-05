@@ -118,10 +118,13 @@ public class ResearchController {
     }
 
     @GetMapping("/export/pdf")
-    public ResponseEntity<byte[]> exportPdf() throws Exception {
-        byte[] data = pdfService.exportToPdf(researchService.getAll());
+    public ResponseEntity<byte[]> exportPdf(@RequestParam(defaultValue = "PROFESSIONAL") String style)
+            throws Exception {
+        byte[] data = pdfService.exportToPdf(researchService.getAll(), style);
+        String filename = "PROFESSIONAL".equalsIgnoreCase(style) ? "research_publications_resume.pdf"
+                : "research_portfolio_summary.pdf";
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=research_portfolio.pdf")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(data);
     }

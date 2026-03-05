@@ -117,6 +117,11 @@ public class ResearchService {
 
         Research saved = researchRepo.save(entity);
 
+        // SAVE CHECKLIST IF PROVIDED
+        if (dto.getChecklist() != null && !dto.getChecklist().isEmpty()) {
+            checklistService.updateChecklist(saved.getId(), dto.getChecklist());
+        }
+
         if (old != null) {
             historyService.logFieldChanges(old, saved);
         } else {

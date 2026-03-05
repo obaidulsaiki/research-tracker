@@ -1,10 +1,15 @@
 package com.example.backend.service;
 
 import com.example.backend.dto.AuthorDTO;
+import com.example.backend.dto.CameraReadyTaskDTO;
 import com.example.backend.dto.PublicationDTO;
 import com.example.backend.dto.ResearchDTO;
+import com.example.backend.dto.ConferenceDTO;
 import com.example.backend.entity.research.Status;
 import com.example.backend.entity.research.PublicVisibility;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 import org.springframework.stereotype.Service;
@@ -18,16 +23,24 @@ import java.util.stream.Collectors;
 
 @Service
 public class CsvService {
+    private final ObjectMapper mapper;
+
+    public CsvService() {
+        this.mapper = new ObjectMapper();
+        this.mapper.registerModule(new JavaTimeModule());
+    }
 
     public byte[] exportToCsv(List<ResearchDTO> researches) throws IOException {
         StringWriter writer = new StringWriter();
         CSVWriter csvWriter = new CSVWriter(writer);
 
-        // Standard header for new structure (23 columns)
+        // Standard header for new structure (34 columns)
         csvWriter.writeNext(new String[] {
                 "NO", "Status", "PID", "Title", "Type", "Publication Name", "Publisher", "Year", "Venue",
                 "Impact Factor", "Quartile", "Direct Link", "Authors", "Overleaf", "Drive", "Dataset",
-                "Visibility", "Featured", "Tags", "Notes", "Submission Date", "Decision Date", "Publication Date"
+                "Visibility", "Featured", "Tags", "Notes", "Submission Date", "Decision Date", "Publication Date",
+                "Conf Name", "Conf Short", "Conf Portal", "Conf Platform", "Conf Submit DL", "Conf Notify Date",
+                "Conf Camera DL", "Conf Reg DL", "Conf Date", "Checklist JSON", "Author Place"
         });
 
         int no = 1;
@@ -42,6 +55,16 @@ public class CsvService {
             }
 
             PublicationDTO p = r.getPublication() != null ? r.getPublication() : new PublicationDTO();
+            ConferenceDTO c = r.getConference() != null ? r.getConference() : null;
+
+            String checklistJson = "";
+            try {
+                if (r.getChecklist() != null && !r.getChecklist().isEmpty()) {
+                    checklistJson = mapper.writeValueAsString(r.getChecklist());
+                }
+            } catch (Exception e) {
+                // ignore
+            }
 
             csvWriter.writeNext(new String[] {
                     String.valueOf(no++),
@@ -66,7 +89,20 @@ public class CsvService {
                     r.getNotes() != null ? r.getNotes() : "",
                     r.getSubmissionDate() != null ? r.getSubmissionDate().toString() : "",
                     r.getDecisionDate() != null ? r.getDecisionDate().toString() : "",
-                    r.getPublicationDate() != null ? r.getPublicationDate().toString() : ""
+                    r.getPublicationDate() != null ? r.getPublicationDate().toString() : "",
+                    // CONFERENCE FIELDS
+                    c != null ? c.getName() : "",
+                    c != null ? c.getShortName() : "",
+                    c != null ? c.getPortalLink() : "",
+                    c != null ? c.getPlatformLink() : "",
+                    c != null ? (c.getSubmissionDeadline() != null ? c.getSubmissionDeadline().toString() : "") : "",
+                    c != null ? (c.getNotificationDate() != null ? c.getNotificationDate().toString() : "") : "",
+                    c != null ? (c.getCameraReadyDeadline() != null ? c.getCameraReadyDeadline().toString() : "") : "",
+                    c != null ? (c.getRegistrationDeadline() != null ? c.getRegistrationDeadline().toString() : "")
+                            : "",
+                    c != null ? (c.getConferenceDate() != null ? c.getConferenceDate().toString() : "") : "",
+                    checklistJson,
+                    String.valueOf(r.getAuthorPlace())
             });
         }
 
@@ -149,6 +185,36 @@ public class CsvService {
                     dto.setSubmissionDate(parseDate(getVal(line, headerMap, "submission date", 20)));
                     dto.setDecisionDate(parseDate(getVal(line, headerMap, "decision date", 21)));
                     dto.setPublicationDate(parseDate(getVal(line, headerMap, "publication date", 22)));
+
+                    // CONFERENCE & CHECKLIST
+                    String confName = getVal(line, headerMap, "conf name", 23);
+                    if (confName != null && !confName.trim().isEmpty()) {
+                        ConferenceDTO c = new ConferenceDTO();
+                        c.setName(confName);
+                        c.setShortName(getVal(line, headerMap, "conf short", 24));
+                        c.setPortalLink(getVal(line, headerMap, "conf portal", 25));
+                        c.setPlatformLink(getVal(line, headerMap, "conf platform", 26));
+                        c.setSubmissionDeadline(parseDate(getVal(line, headerMap, "conf submit dl", 27)));
+                        c.setNotificationDate(parseDate(getVal(line, headerMap, "conf notify date", 28)));
+                        c.setCameraReadyDeadline(parseDate(getVal(line, headerMap, "conf camera dl", 29)));
+                        c.setRegistrationDeadline(parseDate(getVal(line, headerMap, "conf reg dl", 30)));
+                        c.setConferenceDate(parseDate(getVal(line, headerMap, "conf date", 31)));
+                        dto.setConference(c);
+                    }
+
+                    String checklistJson = getVal(line, headerMap, "checklist json", 32);
+                    if (checklistJson != null && !checklistJson.trim().isEmpty()) {
+                        try {
+                            List<CameraReadyTaskDTO> tasks = mapper.readValue(checklistJson,
+                                    new TypeReference<List<CameraReadyTaskDTO>>() {
+                                    });
+                            dto.setChecklist(tasks);
+                        } catch (Exception e) {
+                            // ignore
+                        }
+                    }
+
+                    dto.setAuthorPlace(parseInt(getVal(line, headerMap, "author place", 33)));
 
                     // FALLBACK FOR LEGACY IF DATA SEEMS MISSING
                     // Check if we accidentally got "Authors" (column 12 default) empty but have

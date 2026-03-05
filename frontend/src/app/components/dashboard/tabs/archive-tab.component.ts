@@ -114,8 +114,8 @@ import { DashboardComponent } from '../dashboard.component';
               <div class="dropdown-option conf-option" [class.selected]="searchFilter.filterPublisher() === c.name" (click)="selectPublisher(c.name)">
                 <span class="pub-name conf-name">{{ formatPublisher(c.name) }}</span>
                 <span class="pub-meta conf-meta">
-                  @if (c.venue) { {{ c.venue }}{{ c.year ? ', ' + c.year : '' }} }
-                  @else if (c.year) { {{ c.year }} }
+                  @if (c.venue && c.venue !== '-' && c.venue !== '_') { {{ c.venue }}{{ c.year ? ', ' + c.year : '' }} }
+                  @else if (c.year && c.year !== 'NONE' && c.year !== '0') { {{ c.year }} }
                 </span>
               </div>
             }
@@ -303,7 +303,7 @@ import { DashboardComponent } from '../dashboard.component';
       @if (filterResults.filteredPapers().length > 0) {
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 1rem;">
           <div style="font-size: 0.9rem; font-weight: 700; color: var(--p-text-muted);">
-            Displaying <span style="color: var(--p-accent);">{{ (searchFilter.currentPage() - 1) * searchFilter.pageSize() + 1 }}-{{ Math.min(searchFilter.currentPage() * searchFilter.pageSize(), filterResults.filteredPapers().length) }}</span> of <b>{{ filterResults.filteredPapers().length }}</b> Project Records
+            Displaying <span style="color: var(--p-accent);">{{ (searchFilter.currentPage() - 1) * searchFilter.pageSize() + 1 }} to {{ Math.min(searchFilter.currentPage() * searchFilter.pageSize(), filterResults.filteredPapers().length) }}</span> of <b>{{ filterResults.filteredPapers().length }}</b> Project Records
           </div>
 
           @if (filterResults.totalPages() > 1) {
@@ -491,7 +491,12 @@ export class ArchiveTabComponent {
   availableTypes = computed(() => {
     const types = new Set<string>();
     this.researchService.researchItems().forEach(i => {
-      if (i.publication?.type) types.add(i.publication.type.toUpperCase().trim());
+      if (i.publication?.type) {
+        const t = i.publication.type.toUpperCase().trim();
+        if (t && t !== 'NONE' && t !== 'N/A' && t !== '-' && t !== '_') {
+          types.add(t);
+        }
+      }
     });
     return Array.from(types).sort();
   });
@@ -501,7 +506,7 @@ export class ArchiveTabComponent {
     this.researchService.researchItems().forEach(i => {
       if (i.publication?.year) {
         const y = String(i.publication.year).trim();
-        if (y && y !== 'NONE' && y !== 'N/A') years.add(y);
+        if (y && y !== 'NONE' && y !== 'N/A' && y !== '-' && y !== '_') years.add(y);
       }
     });
     return Array.from(years).sort().reverse();
@@ -517,18 +522,20 @@ export class ArchiveTabComponent {
       if (!name) return;
 
       if (i.publication.type && i.publication.type.toUpperCase().includes('CONFERENCE')) {
-        if (!conferences.has(name)) {
+        const isNone = name.toUpperCase() === 'NONE' || name === '-' || name === '_';
+        if (!conferences.has(name) && !isNone) {
           conferences.set(name, {
             name: name,
-            venue: i.publication.venue || '',
-            year: i.publication.year || ''
+            venue: (i.publication.venue && i.publication.venue !== '-' && i.publication.venue !== '_') ? i.publication.venue : '',
+            year: (i.publication.year && i.publication.year !== 'NONE' && i.publication.year !== '0') ? String(i.publication.year) : ''
           });
         }
       } else {
-        if (!journals.has(name)) {
+        const isNone = name.toUpperCase() === 'NONE' || name === '-' || name === '_';
+        if (!journals.has(name) && !isNone) {
           journals.set(name, {
             name: name,
-            publisher: i.publication.publisher || ''
+            publisher: (i.publication.publisher && i.publication.publisher !== '-' && i.publication.publisher !== '_') ? i.publication.publisher : ''
           });
         }
       }
@@ -711,7 +718,7 @@ export class ArchiveTabComponent {
   }
 
   formatPublisher(name: string): string {
-    if (!name) return '';
+    if (!name || name === '-' || name === '_' || name.toUpperCase() === 'NONE') return '';
     const acronyms = new Set(['ICCIT', 'ICECTE', 'ICEFRONT', 'PECCII', 'QPAIN', 'IEEE', 'ACM', 'SN', 'MDPI', 'IUBAT']);
 
     // Check if the whole string is a known acronym

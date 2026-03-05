@@ -50,4 +50,8 @@
         confirmText="Yes, WIPE EVERYTHING" (cancel)="showBulkConfirm.set(false)" (confirm)="handleBulkDelete()">
     </app-confirm-modal>
     }
+
+    @if (researchService.loading()) {
+    <app-loading-modal [message]="researchService.loadingMessage()"></app-loading-modal>
+    }
 </div>
