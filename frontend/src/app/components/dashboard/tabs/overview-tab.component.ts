@@ -122,8 +122,8 @@ import { ConferenceService, Conference } from '../../../services/conference.serv
                   </div>
                 </div>
                 <div class="countdown-clock">
-                  <div class="clock-value">{{ ms.daysLeft }}</div>
-                  <div class="clock-label">DAYS</div>
+                  <div class="clock-value">{{ ms.daysLeft > 0 ? ms.daysLeft : ms.hoursLeft }}</div>
+                  <div class="clock-label">{{ ms.daysLeft > 0 ? 'DAYS' : 'HOURS' }}</div>
                 </div>
               </div>
             } @empty {
@@ -447,11 +447,23 @@ export class OverviewTabComponent implements OnInit {
 
   private addIfValid(list: any[], title: string, venue: string, type: string, date: string | undefined) {
     if (!date) return;
-    const diff = Date.parse(date) - Date.now();
+
+    // Set deadline to 11:59:59 PM of that day
+    const deadline = new Date(date);
+    deadline.setHours(23, 59, 59, 999);
+
+    const diff = deadline.getTime() - Date.now();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days >= 0) {
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+
+    if (diff >= 0) {
       list.push({
-        title, venue, type, daysLeft: days, isUrgent: days < 7
+        title,
+        venue,
+        type,
+        daysLeft: days,
+        hoursLeft: hours,
+        isUrgent: diff < 7 * 24 * 60 * 60 * 1000
       });
     }
   }

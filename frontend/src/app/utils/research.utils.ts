@@ -102,7 +102,7 @@ export class ResearchUtility {
             return {
                 name: clean,
                 role: 'Author',
-                contributionPercentage: 0
+                authorOrder: 0
             };
         }).filter(a => a.name.length > 0);
     }

@@ -15,4 +15,5 @@ public class JournalMetadataDTO {
     private String impactFactor;
     private String quartile;
     private String url;
+    private Integer year;
 }

@@ -56,10 +56,10 @@ import { trigger, transition, style, animate } from '@angular/animations';
           <span class="value">{{ activeConferencesCount() }}</span>
         </button>
         <button class="stat-pill interactive" 
-                [class.active-filter]="currentFilter() === 'UPCOMING'" 
-                (click)="setFilter('UPCOMING')">
-          <span class="label">UPCOMING</span> 
-          <span class="value">{{ upcomingConferencesCount() }}</span>
+                [class.active-filter]="currentFilter() === 'PAST'" 
+                (click)="setFilter('PAST')">
+          <span class="label">PAST</span> 
+          <span class="value">{{ pastConferencesCount() }}</span>
         </button>
       </div>
 
@@ -421,7 +421,7 @@ export class DeadlinesTabComponent implements OnInit {
   selectedConferenceForEdit = signal<Conference | null>(null);
 
   // Filtering state
-  currentFilter = signal<'ACTIVE' | 'UPCOMING'>('ACTIVE');
+  currentFilter = signal<'ACTIVE' | 'PAST'>('ACTIVE');
 
   // Track which conference cards have their paper tray expanded
   expandedConferences: Record<number, boolean> = {};
@@ -432,22 +432,21 @@ export class DeadlinesTabComponent implements OnInit {
   filteredConferences = computed(() => {
     const list = this.activeConferences();
     const now = new Date();
-    // Normalize to date only for robust comparison
     now.setHours(0, 0, 0, 0);
 
     if (this.currentFilter() === 'ACTIVE') {
       return list.filter(c => {
-        if (!c.submissionDeadline) return false; // Or true depending on if no-date means active. Let's assume no-date goes to UPCOMING or just stays ACTIVE. But user says "upcoming dates are in future.. active is date already done".
+        if (!c.submissionDeadline) return true; // Treat no-date as active work
         const subDate = new Date(c.submissionDeadline);
         subDate.setHours(0, 0, 0, 0);
-        return subDate <= now; // Submission deadline has passed or is today (done)
+        return subDate >= now; // Future or today (ACTIVE work)
       });
     } else {
       return list.filter(c => {
-        if (!c.submissionDeadline) return true; // Treat no-date as upcoming
+        if (!c.submissionDeadline) return false;
         const subDate = new Date(c.submissionDeadline);
         subDate.setHours(0, 0, 0, 0);
-        return subDate > now; // Upcoming dates are in the future
+        return subDate < now; // Already passed (PAST)
       });
     }
   });
@@ -457,28 +456,28 @@ export class DeadlinesTabComponent implements OnInit {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     return list.filter(c => {
-      if (!c.submissionDeadline) return false;
+      if (!c.submissionDeadline) return true;
       const subDate = new Date(c.submissionDeadline);
       subDate.setHours(0, 0, 0, 0);
-      return subDate <= now;
+      return subDate >= now;
     }).length;
   });
 
-  upcomingConferencesCount = computed(() => {
+  pastConferencesCount = computed(() => {
     const list = this.activeConferences();
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     return list.filter(c => {
-      if (!c.submissionDeadline) return true;
+      if (!c.submissionDeadline) return false;
       const subDate = new Date(c.submissionDeadline);
       subDate.setHours(0, 0, 0, 0);
-      return subDate > now;
+      return subDate < now;
     }).length;
   });
 
   ngOnInit() { this.conferenceService.loadAll(); }
 
-  setFilter(filterMode: 'ACTIVE' | 'UPCOMING') {
+  setFilter(filterMode: 'ACTIVE' | 'PAST') {
     this.currentFilter.set(filterMode);
   }
 
@@ -525,12 +524,27 @@ export class DeadlinesTabComponent implements OnInit {
     let isPassed = false;
     let isActive = false;
     let dateStr = 'TBD';
+    let subText = isMissing ? 'PENDING' : 'OPEN';
 
     if (date) {
-      const diff = Date.parse(date) - Date.now();
+      // 1. Set the deadline to 11:59:59 PM of that day
+      const deadline = new Date(date);
+      deadline.setHours(23, 59, 59, 999);
+
+      const now = Date.now();
+      const diff = deadline.getTime() - now;
+
       isPassed = diff <= 0;
       isActive = !isPassed && diff < 7 * 24 * 60 * 60 * 1000;
-      dateStr = new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      dateStr = deadline.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+      if (isPassed) {
+        subText = 'DONE';
+      } else if (diff < 24 * 60 * 60 * 1000) {
+        // Less than 24 hours left
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        subText = `${hours}h LEFT`;
+      }
     }
 
     const classes = `ms-step ${isMissing ? 'missing' : ''} ${isPassed ? 'passed' : ''} ${isActive ? 'active' : ''}`;
@@ -540,7 +554,7 @@ export class DeadlinesTabComponent implements OnInit {
         <span class="ms-label">${label}</span>
         <span class="ms-value">${isMissing ? '---' : dateStr}</span>
         <div class="ms-dot"></div>
-        <span class="ms-sub">${isPassed ? 'DONE' : isMissing ? 'PENDING' : 'OPEN'}</span>
+        <span class="ms-sub">${subText}</span>
       </div>
     `;
   }
@@ -641,17 +655,32 @@ export class DeadlinesTabComponent implements OnInit {
     if (task.completed) {
       this.toggleTask(paper, task, false);
     } else {
-      if (this.isLastTask(paper, task)) {
-        // Apply slight delay for visual effect of clicking before showing confirm box
+      const isLast = this.isLastTask(paper, task);
+      if (isLast) {
+        // Immediate visual feedback: move the slider to 'completed'
+        task.completed = true;
+        this.notifySignal();
+
+        // Wait for the 500ms transition to complete before showing the blocking confirm dialog
         setTimeout(() => {
-          if (confirm('are u sure the tasks asign are finished?')) {
+          if (confirm('Are you sure all tasks for this paper are finished?')) {
+            // Proceed to sync with backend
             this.toggleTask(paper, task, true);
+          } else {
+            // Revert UI if user cancels the confirmation
+            task.completed = false;
+            this.notifySignal();
           }
-        }, 50);
+        }, 600);
       } else {
         this.toggleTask(paper, task, true);
       }
     }
+  }
+
+  private notifySignal() {
+    // Trigger signal notification to ensure all derived UI states (like the Congrats box) update
+    this.researchService.researchItems.set([...this.researchService.researchItems()]);
   }
 
   private isLastTask(paper: Research, task: CameraReadyTask): boolean {
@@ -663,6 +692,7 @@ export class DeadlinesTabComponent implements OnInit {
   private toggleTask(paper: Research, task: CameraReadyTask, completed: boolean) {
     // Optimistic UI update handled purely by CSS class binding now
     task.completed = completed;
+    this.notifySignal();
 
     if (paper.id) {
       this.checklistService.toggleTask(paper.id, task.taskKey, completed).subscribe({

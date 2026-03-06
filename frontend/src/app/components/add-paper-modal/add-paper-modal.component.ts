@@ -118,7 +118,7 @@ import { ResearchService, Research, Author } from '../../services/research.servi
                   <option value="Q2">Q2</option>
                   <option value="Q3">Q3</option>
                   <option value="Q4">Q4</option>
-                  <option value="NON-PREDATORY">NON-PREDATORY</option>
+                  <option value="PREDATORY">PREDATORY</option>
                   <option value="NON INDEXED">NON INDEXED</option>
                 </select>
               </div>
@@ -141,8 +141,8 @@ import { ResearchService, Research, Author } from '../../services/research.servi
             <div class="author-stack">
               <div class="author-item" *ngFor="let author of paper.authors; let i = index">
                 <div class="author-idx">{{ i + 1 }}</div>
-                <input type="text" [(ngModel)]="author.name" [name]="'a-name-'+i" class="input-field" placeholder="Author Name">
-                <input type="number" [(ngModel)]="author.contributionPercentage" [name]="'a-pct-'+i" class="input-field" style="width: 80px" placeholder="Place">
+                <input type="text" [(ngModel)]="author.name" (ngModelChange)="onAuthorNameChange(author)" [name]="'a-name-'+i" class="input-field" placeholder="Author Name">
+                <input type="number" [(ngModel)]="author.authorOrder" [name]="'a-order-'+i" class="input-field" style="width: 80px" placeholder="Place">
                 <button type="button" class="btn-del" (click)="removeAuthor(i)">🗑</button>
               </div>
             </div>
@@ -390,17 +390,23 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
   showValidation = signal(false);
   isCheckingDuplicate = signal(false);
   showClearConfirm = signal(false);
+  originalIdentifyingInfo: any = null;
 
   @Input() set editData(data: Research | undefined) {
-    if (data && Object.keys(data).length > 0) {
-      this.paper = JSON.parse(JSON.stringify(data));
-      if (!this.paper.authors) {
-        this.paper.authors = [];
-      } else {
+    if (data && data.id) {
+      console.log('MODAL[editData] Entering EDIT mode for ID:', data.id);
+      // Spread copy to preserve ID and all fields safely
+      this.paper = { ...data };
+
+      if (data.publication) {
+        this.paper.publication = { ...data.publication };
+      }
+      if (data.authors) {
+        this.paper.authors = data.authors.map(a => ({ ...a }));
         // Ensure authors have sequential order if missing or zero
         this.paper.authors.forEach((a: Author, idx: number) => {
-          if (!a.contributionPercentage || a.contributionPercentage === 0) {
-            a.contributionPercentage = idx + 1;
+          if (!a.authorOrder || a.authorOrder === 0) {
+            a.authorOrder = idx + 1;
           }
         });
       }
@@ -412,8 +418,17 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
         this.paper.publication.type = this.mapPaperType(this.paper.publication.type);
         if (!this.paper.publication.quartile) this.paper.publication.quartile = 'N/A';
       }
+
+      // Store original ID fields to avoid checking duplicates if they haven't changed in the edit session
+      const normalize = (s: any) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      this.originalIdentifyingInfo = {
+        title: normalize(this.paper.title),
+        pubName: normalize(this.paper.publication?.name),
+        year: normalize(String(this.paper.publication?.year || ''))
+      };
     } else {
       this.paper = this.getEmptyPaper();
+      this.originalIdentifyingInfo = null;
     }
   }
 
@@ -489,9 +504,38 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
     this.errorMessage.set('');
     if (!this.paper.title || this.paper.title.length < 5) return;
 
+    console.log('MODAL[onMainDetailsChange] Checking duplicate for ID:', this.paper.id);
+
+    // Skip duplicate check if we are editing and haven't actually changed the identifying info
+    if (this.originalIdentifyingInfo) {
+      const normalize = (s: any) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+      const curTitle = normalize(this.paper.title);
+      const curPubName = normalize(this.paper.publication?.name);
+      const curYear = normalize(String(this.paper.publication?.year || ''));
+
+      console.log('AUTO-CHECK: Current vs Original:', {
+        cur: { t: curTitle, p: curPubName, y: curYear },
+        orig: this.originalIdentifyingInfo
+      });
+
+      if (curTitle === this.originalIdentifyingInfo.title &&
+        curPubName === this.originalIdentifyingInfo.pubName &&
+        curYear === this.originalIdentifyingInfo.year) {
+        console.log('AUTO-CHECK: Avoiding duplicate check on unchanged identifying fields.');
+        return;
+      }
+      console.log('AUTO-CHECK: Identifying fields changed. Proceeding with check.');
+    }
+
     if (this.duplicateSub) this.duplicateSub.unsubscribe();
 
     this.isCheckingDuplicate.set(true);
+    console.log('MODAL[onMainDetailsChange] Initiating duplicate check for paper:', {
+      title: this.paper.title,
+      publicationName: this.paper.publication?.name,
+      publicationYear: this.paper.publication?.year
+    });
     this.duplicateSub = this.researchService.checkDuplicate(this.paper).subscribe({
       next: (res) => {
         if (res.exists) {
@@ -574,7 +618,7 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
     this.paper.authors = names.map((name: string, index: number) => ({
       name: name.replace(/[*†‡§]/g, '').trim(),
       role: 'Author',
-      contributionPercentage: index + 1
+      authorOrder: index + 1
     })).filter((a: Author) => a.name.length > 0);
   }
 
@@ -583,10 +627,17 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
     this.paper.authors.push({
       name: '',
       role: 'Author',
-      contributionPercentage: this.paper.authors.length + 1
+      authorOrder: this.paper.authors.length + 1
     });
   }
   removeAuthor(index: number) { this.paper.authors.splice(index, 1); }
+
+  onAuthorNameChange(author: Author) {
+    if (author.id) {
+      console.log('AUTHOR: Name changed, clearing ID to force re-resolution:', author.name);
+      delete author.id;
+    }
+  }
 
   getBulkAuthors(): string {
     return (this.paper.authors || []).map(a => a.name).filter(n => n.length > 0).join(', ');
@@ -595,15 +646,13 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
   onSubmit(event: Event) {
     event.preventDefault();
     this.showValidation.set(true);
+    this.errorMessage.set(''); // Clear stale errors
+
+    console.log('MODAL[onSubmit] Submitting paper data. ID:', this.paper.id);
 
     if (!this.paper.title) {
       this.errorMessage.set('⚠️ Paper Title is mandatory.');
       this.tab.set('basic');
-      return;
-    }
-
-    if (this.errorMessage() && this.errorMessage().includes('exists')) {
-      alert('Cannot save: Record already exists.');
       return;
     }
 
@@ -618,6 +667,7 @@ export class AddPaperModalComponent implements OnInit, OnChanges {
 
     if (this.paper.pid === null || this.paper.pid === undefined) this.paper.pid = 0;
     if (this.paper.authorPlace === null || this.paper.authorPlace === undefined) this.paper.authorPlace = 1;
+    console.log('MODAL[onSubmit] FINAL PAYLOAD:', JSON.stringify(this.paper));
 
     this.researchService.save(this.paper).subscribe({
       next: (saved) => {

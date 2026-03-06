@@ -11,6 +11,7 @@ import { AuthorDetailComponent } from './components/dashboard/tabs/author-detail
 import { AnalyticsTabComponent } from './components/dashboard/tabs/analytics-tab.component';
 import { HistoryTabComponent } from './components/dashboard/tabs/history-tab.component';
 import { DownloadTabComponent } from './components/dashboard/tabs/download-tab.component';
+import { VenueDirectoryComponent } from './components/dashboard/tabs/venue-directory.component';
 
 export const routes: Routes = [
     {
@@ -22,10 +23,11 @@ export const routes: Routes = [
             { path: 'archive', component: ArchiveTabComponent },
             { path: 'deadlines', component: DeadlinesTabComponent },
             { path: 'authors', component: AuthorsTabComponent },
-            { path: 'author/:name', component: AuthorDetailComponent },
+            { path: 'author/:authorName', component: AuthorDetailComponent },
             { path: 'analytics', component: AnalyticsTabComponent },
             { path: 'history', component: HistoryTabComponent },
             { path: 'download', component: DownloadTabComponent },
+            { path: 'venues', component: VenueDirectoryComponent },
         ]
     },
     { path: 'portfolio', component: PortfolioComponent },

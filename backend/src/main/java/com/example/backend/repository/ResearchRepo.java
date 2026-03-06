@@ -6,9 +6,11 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ResearchRepo extends JpaRepository<Research, Long> {
-    boolean existsByTitleAndPublicationNameAndPublicationYearAndIdNot(String title, String name, String year, Long id);
+    boolean existsByTitleIgnoreCaseAndPublicationNameIgnoreCaseAndPublicationYearAndIdNot(String title, String name,
+            String year, Long id);
 
-    boolean existsByTitleAndPublicationNameAndPublicationYear(String title, String name, String year);
+    boolean existsByTitleIgnoreCaseAndPublicationNameIgnoreCaseAndPublicationYear(String title, String name,
+            String year);
 
     java.util.List<Research> findByPublicationNameIgnoreCase(String name);
 

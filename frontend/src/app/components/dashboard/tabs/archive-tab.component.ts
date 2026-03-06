@@ -80,7 +80,7 @@ import { DashboardComponent } from '../dashboard.component';
               <option value="Q2">Q2 Ranking</option>
               <option value="Q3">Q3 Ranking</option>
               <option value="Q4">Q4 Ranking</option>
-              <option value="NON-PREDATORY">NON-PREDATORY</option>
+              <option value="PREDATORY">PREDATORY</option>
               <option value="NON INDEXED">NON INDEXED</option>
             </select>
           </div>
@@ -363,7 +363,7 @@ import { DashboardComponent } from '../dashboard.component';
     .p-badge[data-q="Q2"] { background: #f1f5f9 !important; color: #475569 !important; border-color: #cbd5e1 !important; }
     .p-badge[data-q="Q3"] { background: #ecfdf5 !important; color: #065f46 !important; border-color: #6ee7b7 !important; }
     .p-badge[data-q="Q4"] { background: #fff1f2 !important; color: #9f1239 !important; border-color: #fda4af !important; }
-    .p-badge[data-q="NON-PREDATORY"] { background: #eff6ff !important; color: #1e40af !important; border-color: #93c5fd !important; }
+    .p-badge[data-q="PREDATORY"] { background: #fee2e2 !important; color: #991b1b !important; border-color: #fecaca !important; }
     .p-badge[data-q="NON INDEXED"] { background: #f8fafc !important; color: #64748b !important; border-color: #e2e8f0 !important; }
     
     .sortable-header {

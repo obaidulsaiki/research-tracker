@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +62,7 @@ public class JournalService implements CommandLineRunner {
                         m.setImpactFactor(ifFactor);
                         m.setQuartile(quartile);
                         m.setUrl(url);
+                        m.setYear(year);
                         m.setLastUpdated(java.time.LocalDateTime.now());
                         journalRepo.save(m);
                 }
@@ -135,11 +137,24 @@ public class JournalService implements CommandLineRunner {
                                                 .impactFactor(record.ifFactor)
                                                 .quartile(record.quartile)
                                                 .url(record.url)
+                                                .year(record.year)
                                                 .build());
                         }
                 }
 
                 return Optional.empty();
+        }
+
+        public List<JournalMetadataDTO> getAllJournals() {
+                return journalRepo.findAll().stream()
+                                .map(this::convertToJournalDTO)
+                                .toList();
+        }
+
+        public List<ConferenceMetadataDTO> getAllConferences() {
+                return conferenceRepo.findAll().stream()
+                                .map(this::convertToConfDTO)
+                                .toList();
         }
 
         private JournalMetadataDTO convertToJournalDTO(JournalMetadata m) {
@@ -149,6 +164,7 @@ public class JournalService implements CommandLineRunner {
                                 .impactFactor(m.getImpactFactor())
                                 .quartile(m.getQuartile())
                                 .url(m.getUrl())
+                                .year(m.getYear())
                                 .build();
         }
 

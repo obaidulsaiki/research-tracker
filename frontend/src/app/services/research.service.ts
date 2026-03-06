@@ -6,7 +6,7 @@ export interface Author {
     id?: number;
     name: string;
     role: string;
-    contributionPercentage: number;
+    authorOrder: number;
 }
 
 export interface HistoryEntry {

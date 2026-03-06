@@ -262,7 +262,9 @@ public class ResearchMapper {
                 AuthorResearch matchingAr = null;
                 for (AuthorResearch existing : existingList) {
                     if (authorDto.getId() != null && existing.getAuthor() != null
-                            && authorDto.getId().equals(existing.getAuthor().getId())) {
+                            && authorDto.getId().equals(existing.getAuthor().getId())
+                            && authorDto.getName() != null
+                            && authorDto.getName().equalsIgnoreCase(existing.getAuthor().getName())) {
                         matchingAr = existing;
                         break;
                     } else if (authorDto.getId() == null && authorDto.getName() != null && existing.getAuthor() != null

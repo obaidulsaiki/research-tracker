@@ -55,17 +55,40 @@ public class ResearchService {
 
     @Transactional
     public ResearchDTO save(ResearchDTO dto) {
-        validator.validateUniqueness(dto);
-
         Research entity;
         Research old = null;
 
         if (dto.getId() != null) {
+            log.info("SAVE: Entering UPDATE mode for ID: {}", dto.getId());
             entity = researchRepo.findById(dto.getId())
                     .orElseThrow(() -> new RuntimeException("Research record not found with ID: " + dto.getId()));
             old = mapper.copyEntityState(entity);
+
+            // DETAILED CHANGE DETECTION with aggressive normalization
+            String oldTitle = normalize(entity.getTitle());
+            String newTitle = normalize(dto.getTitle());
+            boolean titleChanged = !oldTitle.equals(newTitle);
+
+            String oldPubName = entity.getPublication() != null ? normalize(entity.getPublication().getName()) : "";
+            String newPubName = dto.getPublication() != null ? normalize(dto.getPublication().getName()) : "";
+            boolean pubNameChanged = !oldPubName.equals(newPubName);
+
+            String oldYear = entity.getPublication() != null ? normalize(entity.getPublication().getYear()) : "";
+            String newYear = dto.getPublication() != null ? normalize(dto.getPublication().getYear()) : "";
+            boolean yearChanged = !oldYear.equals(newYear);
+
+            if (titleChanged || pubNameChanged || yearChanged) {
+                log.info("VALIDATION: Identity changed (T:{}, P:{}, Y:{}). Checking uniqueness...",
+                        titleChanged, pubNameChanged, yearChanged);
+                validator.validateUniqueness(dto);
+            } else {
+                log.info("VALIDATION: Identity unchanged. Proceeding with safe update.");
+            }
+
             mapper.updateEntityFromDTO(entity, dto);
         } else {
+            log.info("SAVE: Entering CREATE mode for new record.");
+            validator.validateUniqueness(dto);
             entity = mapper.convertToEntity(dto);
         }
 
@@ -172,5 +195,13 @@ public class ResearchService {
         return historyEntryRepo.findAll().stream()
                 .map(mapper::convertToHistoryDTO)
                 .collect(Collectors.toList());
+    }
+
+    private String normalize(String s) {
+        if (s == null)
+            return "";
+        // Aggressive normalization: trim, lowercase, and collapse all internal
+        // whitespace
+        return s.trim().toLowerCase().replaceAll("\\s+", " ");
     }
 }

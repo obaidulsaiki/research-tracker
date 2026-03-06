@@ -10,17 +10,20 @@ import com.example.backend.service.ExcelService;
 import com.example.backend.service.PdfService;
 import com.example.backend.service.ResearchService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/research")
 @RequiredArgsConstructor
+@Slf4j
 public class ResearchController {
 
     private final ResearchService researchService;
@@ -31,6 +34,12 @@ public class ResearchController {
     private final ExcelService excelService;
     private final PdfService pdfService;
 
+    private String normalize(String s) {
+        if (s == null)
+            return "";
+        return s.trim().toLowerCase().replaceAll("\\s+", " ");
+    }
+
     @GetMapping("/journal-lookup")
     public ResponseEntity<?> lookupJournal(@RequestParam String name) {
         return journalService.lookup(name)
@@ -40,18 +49,25 @@ public class ResearchController {
 
     @PostMapping("/check-duplicate")
     public ResponseEntity<Map<String, Boolean>> checkDuplicate(@RequestBody ResearchDTO dto) {
-        String title = dto.getTitle();
-        String pubName = dto.getPublication() != null ? dto.getPublication().getName() : null;
-        String year = dto.getPublication() != null ? dto.getPublication().getYear() : null;
+        String title = normalize(dto.getTitle());
+        String pubName = dto.getPublication() != null ? normalize(dto.getPublication().getName()) : "";
+        String year = dto.getPublication() != null ? normalize(dto.getPublication().getYear()) : "";
+
+        log.debug("API: Checking duplicate for T={}, P={}, Y={}, ID={}", title, pubName, year, dto.getId());
 
         boolean exists;
         if (dto.getId() != null) {
-            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYearAndIdNot(title, pubName, year,
+            exists = researchRepo.existsByTitleIgnoreCaseAndPublicationNameIgnoreCaseAndPublicationYearAndIdNot(title,
+                    pubName, year,
                     dto.getId());
         } else {
-            exists = researchRepo.existsByTitleAndPublicationNameAndPublicationYear(title, pubName, year);
+            exists = researchRepo.existsByTitleIgnoreCaseAndPublicationNameIgnoreCaseAndPublicationYear(title, pubName,
+                    year);
         }
-        return ResponseEntity.ok(Map.of("exists", exists));
+
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("exists", exists);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

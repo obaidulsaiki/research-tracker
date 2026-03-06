@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
+import { Component, Input, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Research } from '../../../services/research.service';
+import { Research, ResearchService } from '../../../services/research.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-author-detail',
@@ -11,7 +12,7 @@ import { Research } from '../../../services/research.service';
 
       <!-- BACK BUTTON + HEADER -->
       <div class="detail-header">
-        <button class="back-btn" (click)="back.emit()">
+        <button class="back-btn" (click)="goBack()">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           Back to Network
         </button>
@@ -25,28 +26,28 @@ import { Research } from '../../../services/research.service';
             <h1 class="author-name">{{ authorName }}</h1>
             <p class="author-sub">Research Collaborator</p>
             <div class="author-chips">
-              <button class="chip" [class.active]="activeFilter === 'all'" (click)="setFilter('all')">{{ papers.length }} {{ papers.length === 1 ? 'Paper' : 'Papers' }}</button>
-              <button class="chip accent" [class.active]="activeFilter === 'published'" (click)="setFilter('published')">{{ publishedCount }} Published</button>
-              <button class="chip blue" [class.active]="activeFilter === 'accepted'" (click)="setFilter('accepted')">{{ acceptedCount }} Accepted</button>
-              <button class="chip yellow" [class.active]="activeFilter === 'inprogress'" (click)="setFilter('inprogress')">{{ inProgressCount }} In Progress</button>
+              <button class="chip" [class.active]="activeFilter() === 'all'" (click)="setFilter('all')">{{ papers().length }} {{ papers().length === 1 ? 'Paper' : 'Papers' }}</button>
+              <button class="chip accent" [class.active]="activeFilter() === 'published'" (click)="setFilter('published')">{{ publishedCount() }} Published</button>
+              <button class="chip blue" [class.active]="activeFilter() === 'accepted'" (click)="setFilter('accepted')">{{ acceptedCount() }} Accepted</button>
+              <button class="chip yellow" [class.active]="activeFilter() === 'inprogress'" (click)="setFilter('inprogress')">{{ inProgressCount() }} In Progress</button>
             </div>
           </div>
         </div>
         <div class="hero-stats">
           <div class="hero-stat">
-            <span class="hs-val">{{ papers.length }}</span>
+            <span class="hs-val">{{ papers().length }}</span>
             <span class="hs-lbl">Total Papers</span>
           </div>
           <div class="hero-stat">
-            <span class="hs-val">{{ publishedCount }}</span>
+            <span class="hs-val">{{ publishedCount() }}</span>
             <span class="hs-lbl">Published</span>
           </div>
           <div class="hero-stat">
-            <span class="hs-val">{{ uniqueVenues }}</span>
+            <span class="hs-val">{{ uniqueVenues() }}</span>
             <span class="hs-lbl">Venues</span>
           </div>
           <div class="hero-stat">
-            <span class="hs-val">{{ latestYear }}</span>
+            <span class="hs-val">{{ latestYear() }}</span>
             <span class="hs-lbl">Latest Year</span>
           </div>
         </div>
@@ -56,21 +57,24 @@ import { Research } from '../../../services/research.service';
       <div class="papers-section">
         <div class="section-title">
           <h2>Collaborative Papers</h2>
-          <span class="count-badge">{{ filteredPapers.length }} {{ activeFilter === 'all' ? 'total' : 'filtered' }}</span>
-          @if (activeFilter !== 'all') {
+          <span class="count-badge">{{ filteredPapers().length }} {{ activeFilter() === 'all' ? 'total' : 'filtered' }}</span>
+          @if (researchService.loading()) {
+            <span class="sync-indicator">Synchronizing with archive...</span>
+          }
+          @if (activeFilter() !== 'all') {
             <button class="clear-filter-btn" (click)="setFilter('all')">✕ Clear filter</button>
           }
         </div>
 
-        @if (filteredPapers.length === 0) {
+        @if (filteredPapers().length === 0 && !researchService.loading()) {
           <div class="empty-state">
             <div class="empty-icon">📄</div>
-            <p>{{ activeFilter === 'all' ? 'No papers found for this author.' : 'No papers match this filter.' }}</p>
+            <p>{{ activeFilter() === 'all' ? 'No papers found for this author.' : 'No papers match this filter.' }}</p>
           </div>
         }
 
         <div class="papers-grid">
-          @for (paper of filteredPapers; track paper.id) {
+          @for (paper of filteredPapers(); track paper.id) {
             <div class="paper-card p-card">
               <!-- Status stripe -->
               <div class="status-stripe" [attr.data-status]="paper.status"></div>
@@ -267,7 +271,7 @@ import { Research } from '../../../services/research.service';
     .quartile-chip[data-q="Q2"] { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
     .quartile-chip[data-q="Q3"] { background: #ecfdf5; color: #065f46; border-color: #6ee7b7; }
     .quartile-chip[data-q="Q4"] { background: #fff1f2; color: #9f1239; border-color: #fda4af; }
-    .quartile-chip[data-q="NON-PREDATORY"] { background: #eff6ff; color: #1e40af; border-color: #93c5fd; }
+    .quartile-chip[data-q="PREDATORY"] { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
     .if-chip { font-size: 0.6rem; font-weight: 700; padding: 2px 6px; border-radius: 5px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
 
     .authors-row { display: flex; align-items: flex-start; gap: 0.5rem; }
@@ -311,55 +315,78 @@ import { Research } from '../../../services/research.service';
     .empty-state { text-align: center; padding: 4rem; }
     .empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
     .empty-state p { color: var(--p-text-muted); font-weight: 600; }
+    .sync-indicator { font-size: 0.7rem; font-weight: 700; color: var(--p-accent); margin-left: auto; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
   `]
 })
-export class AuthorDetailComponent {
-  @Input() authorName: string = '';
-  @Input() allPapers: Research[] = [];
-  @Output() back = new EventEmitter<void>();
-  @Output() filterReset = new EventEmitter<void>();
+export class AuthorDetailComponent implements OnInit {
+  // Use a signal for the name to trigger reactivity in computed
+  nameSignal = signal('');
+  @Input() set authorName(val: string) {
+    this.nameSignal.set(decodeURIComponent(val || ''));
+  }
+  get authorName() { return this.nameSignal(); }
 
-  activeFilter: 'all' | 'published' | 'accepted' | 'inprogress' = 'all';
+  protected researchService = inject(ResearchService);
+  private router = inject(Router);
 
-  setFilter(f: 'all' | 'published' | 'accepted' | 'inprogress') {
-    const newFilter = (this.activeFilter === f && f !== 'all') ? 'all' : f;
-    this.activeFilter = newFilter;
-    if (newFilter === 'all') {
-      this.filterReset.emit();
+  activeFilter = signal<'all' | 'published' | 'accepted' | 'inprogress'>('all');
+
+  ngOnInit() {
+    console.log('AUTHOR_DETAIL[ngOnInit] name:', this.authorName);
+    if (this.researchService.researchItems().length === 0) {
+      this.researchService.loadAll();
     }
   }
 
-  get papers(): Research[] {
-    if (!this.authorName) return [];
-    const target = this.authorName.toLowerCase();
-    return this.allPapers.filter(p =>
-      p.authors?.some(a => a.name.toLowerCase().includes(target) || target.includes(a.name.toLowerCase()))
+  goBack() {
+    this.router.navigate(['/authors']);
+  }
+
+  setFilter(f: 'all' | 'published' | 'accepted' | 'inprogress') {
+    this.activeFilter.set(this.activeFilter() === f && f !== 'all' ? 'all' : f);
+  }
+
+  papers = computed(() => {
+    const target = this.nameSignal().toLowerCase();
+    if (!target) return [];
+
+    const all = this.researchService.researchItems();
+    return all.filter(p =>
+      p.authors?.some(a => {
+        const n = a.name.toLowerCase();
+        return n.includes(target) || target.includes(n);
+      })
     ).sort((a, b) => {
       const weights: Record<string, number> = { PUBLISHED: 1, ACCEPTED: 2, RUNNING: 3, WORKING: 4, HYPOTHESIS: 5, REJECTED: 6, WITHDRAWN: 7 };
       return (weights[a.status || ''] || 9) - (weights[b.status || ''] || 9);
     });
-  }
+  });
 
-  get filteredPapers(): Research[] {
-    switch (this.activeFilter) {
-      case 'published': return this.papers.filter(p => p.status === 'PUBLISHED');
-      case 'accepted': return this.papers.filter(p => p.status === 'ACCEPTED');
-      case 'inprogress': return this.papers.filter(p => ['RUNNING', 'WORKING', 'HYPOTHESIS'].includes(p.status || ''));
-      default: return this.papers;
+  filteredPapers = computed(() => {
+    const p = this.papers();
+    const f = this.activeFilter();
+    switch (f) {
+      case 'published': return p.filter(x => x.status === 'PUBLISHED');
+      case 'accepted': return p.filter(x => x.status === 'ACCEPTED');
+      case 'inprogress': return p.filter(x => ['RUNNING', 'WORKING', 'HYPOTHESIS'].includes(x.status || ''));
+      default: return p;
     }
-  }
+  });
 
-  get publishedCount(): number { return this.papers.filter(p => p.status === 'PUBLISHED').length; }
-  get acceptedCount(): number { return this.papers.filter(p => p.status === 'ACCEPTED').length; }
-  get inProgressCount(): number { return this.papers.filter(p => ['RUNNING', 'WORKING', 'HYPOTHESIS'].includes(p.status || '')).length; }
-  get uniqueVenues(): number {
-    const venues = new Set(this.papers.map(p => p.publication?.name).filter(Boolean));
+  publishedCount = computed(() => this.papers().filter(p => p.status === 'PUBLISHED').length);
+  acceptedCount = computed(() => this.papers().filter(p => p.status === 'ACCEPTED').length);
+  inProgressCount = computed(() => this.papers().filter(p => ['RUNNING', 'WORKING', 'HYPOTHESIS'].includes(p.status || '')).length);
+
+  uniqueVenues = computed(() => {
+    const venues = new Set(this.papers().map(p => p.publication?.name).filter(Boolean));
     return venues.size;
-  }
-  get latestYear(): string {
-    const years = this.papers.map(p => p.publication?.year).filter(y => y && /^\d{4}$/.test(y!)) as string[];
+  });
+
+  latestYear = computed(() => {
+    const years = this.papers().map(p => p.publication?.year).filter(y => y && /^\d{4}$/.test(y!)) as string[];
     return years.length ? years.sort().reverse()[0] : '—';
-  }
+  });
 
   isThisAuthor(name: string): boolean {
     const target = this.authorName.toLowerCase();

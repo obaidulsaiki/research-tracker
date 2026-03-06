@@ -32,6 +32,9 @@ import { CommonModule } from '@angular/common';
         <div class="nav-item" [class.active]="activeTab === 'analytics'" (click)="tabChange.emit('analytics')">
           <span class="nav-icon">📈</span> Insights
         </div>
+        <div class="nav-item" [class.active]="activeTab === 'venues'" (click)="tabChange.emit('venues')">
+          <span class="nav-icon">🏛️</span> Venues
+        </div>
         <div class="nav-item" [class.active]="activeTab === 'history'" (click)="tabChange.emit('history')">
           <span class="nav-icon">🕒</span> Audit
         </div>

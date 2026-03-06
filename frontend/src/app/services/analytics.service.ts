@@ -61,7 +61,7 @@ export class AnalyticsService {
         const quartileDistribution = computed(() => {
             const items = researchItems();
             const counts: Record<string, number> = {
-                'Q1': 0, 'Q2': 0, 'Q3': 0, 'Q4': 0, 'NON-PREDATORY': 0, 'NON INDEXED': 0
+                'Q1': 0, 'Q2': 0, 'Q3': 0, 'Q4': 0, 'PREDATORY': 0, 'NON INDEXED': 0
             };
             for (let i of items) {
                 let q = i.publication?.quartile;
